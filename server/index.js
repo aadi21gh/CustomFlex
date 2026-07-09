@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
@@ -53,6 +54,9 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
+
+// Sanitize data against NoSQL query injection
+app.use(mongoSanitize());
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
