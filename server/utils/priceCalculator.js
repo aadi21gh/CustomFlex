@@ -75,10 +75,141 @@ const calculatePrice = ({
   quantity = 1,
   shippingMethod = 'standard',
   customBasePrice = null,
+  design = null,
 }) => {
-  // Get base price
+  // Get original base price
   const categoryPrices = BASE_PRICES[category] || BASE_PRICES.artwork;
-  const basePrice = customBasePrice || categoryPrices[subcategory] || categoryPrices[Object.keys(categoryPrices)[0]] || 20;
+  const originalBasePrice = customBasePrice || categoryPrices[subcategory] || categoryPrices[Object.keys(categoryPrices)[0]] || 20;
+  let basePrice = originalBasePrice;
+
+  // AI Dynamic Price Prediction factors
+  let aiAnalysis = null;
+
+  if (design) {
+    let layers = [];
+    if (design.canvasData && typeof design.canvasData === 'object') {
+      layers = design.canvasData.objects || [];
+    } else if (design.canvasData && typeof design.canvasData === 'string') {
+      try {
+        const parsed = JSON.parse(design.canvasData);
+        layers = parsed.objects || [];
+      } catch (e) {}
+    }
+
+    // Count layer types
+    let vectorsCount = 0;
+    let textCount = 0;
+    let imageCount = 0;
+    let shapesCount = 0;
+    const colorsSet = new Set();
+
+    layers.forEach(obj => {
+      const type = obj.type || '';
+      if (type === 'path') {
+        vectorsCount++;
+      } else if (type === 'text' || type === 'i-text' || type.includes('text')) {
+        textCount++;
+      } else if (type === 'image') {
+        imageCount++;
+      } else {
+        shapesCount++;
+      }
+
+      // Track colors
+      if (obj.fill && typeof obj.fill === 'string') {
+        const fillLower = obj.fill.toLowerCase();
+        if (fillLower !== 'transparent' && fillLower !== 'none' && !fillLower.includes('url')) {
+          colorsSet.add(obj.fill);
+        }
+      }
+      if (obj.stroke && typeof obj.stroke === 'string') {
+        const strokeLower = obj.stroke.toLowerCase();
+        if (strokeLower !== 'transparent' && strokeLower !== 'none') {
+          colorsSet.add(obj.stroke);
+        }
+      }
+    });
+
+    const colorsCount = colorsSet.size || 1; // At least 1 color
+
+    // Compute complexity percentage and dynamic modifiers
+    let complexityModifier = 0.0;
+    let insights = [];
+
+    const totalElements = layers.length;
+    if (totalElements === 0) {
+      complexityModifier -= 0.15;
+      insights.push('Blank canvas base rate adjustment (-15%)');
+    } else if (totalElements <= 2) {
+      complexityModifier -= 0.10;
+      insights.push('Minimalist design layout discount (-10%)');
+    } else if (totalElements > 12) {
+      complexityModifier += 0.15;
+      insights.push(`High-density layout processing (${totalElements} elements) (+15%)`);
+    } else if (totalElements > 6) {
+      complexityModifier += 0.08;
+      insights.push(`Multi-layered layout setup (+8%)`);
+    } else {
+      insights.push('Standard layout complexity (Optimal print rate)');
+    }
+
+    // Color density modifier
+    let colorModifier = 0.0;
+    if (colorsCount === 1) {
+      colorModifier -= 0.05;
+      insights.push('Monochromatic color print discount (-5%)');
+    } else if (colorsCount > 5) {
+      colorModifier += 0.05;
+      insights.push(`High color diversity print rate (${colorsCount} colors) (+5%)`);
+    } else {
+      insights.push('Standard color density (Eco-friendly CMYK ink usage)');
+    }
+
+    // Creator popularity modifier
+    let popularityModifier = 0.0;
+    const purchaseCount = design.purchaseCount || 0;
+    if (purchaseCount > 20) {
+      popularityModifier += 0.10;
+      insights.push('Trending creator layout royalty (+10%)');
+    } else if (purchaseCount > 5) {
+      popularityModifier += 0.05;
+      insights.push('Featured creator template royalty (+5%)');
+    }
+
+    // AI elements check
+    if (design.aiElementsUsed) {
+      insights.push('AI-generated design components detected');
+    }
+
+    // Apply modifiers to base price
+    const totalModifier = complexityModifier + colorModifier + popularityModifier;
+    basePrice = originalBasePrice * (1 + totalModifier);
+
+    // Limit price change to be safe (min 75%, max 140% of original base price)
+    const minPrice = originalBasePrice * 0.75;
+    const maxPrice = originalBasePrice * 1.40;
+    basePrice = Math.max(minPrice, Math.min(maxPrice, basePrice));
+
+    // Calculate score values for UI (0 to 100)
+    const complexityScore = Math.min(Math.round((totalElements / 15) * 100), 100);
+    const inkDensityScore = Math.min(Math.round((colorsCount / 10) * 100), 100);
+    const manufacturingLoadScore = Math.min(Math.round(((vectorsCount * 2 + textCount * 5 + imageCount * 15 + shapesCount * 3) / 40) * 100), 100);
+
+    aiAnalysis = {
+      layerCount: totalElements,
+      vectorsCount,
+      textCount,
+      imageCount,
+      shapesCount,
+      colorsCount,
+      insights,
+      inkDensityScore,
+      complexityScore,
+      manufacturingLoadScore,
+      originalBasePrice: parseFloat(originalBasePrice.toFixed(2)),
+      aiPricePredictionApplied: true
+    };
+  }
 
   // Apply modifiers
   const materialMod = MATERIAL_MODIFIERS[material] || 1.0;
@@ -102,6 +233,7 @@ const calculatePrice = ({
 
   return {
     basePrice: parseFloat(basePrice.toFixed(2)),
+    originalBasePrice: parseFloat(originalBasePrice.toFixed(2)),
     materialModifier: materialMod,
     printAreaModifier: printAreaMod,
     aiComplexityFee: parseFloat(aiComplexityFee.toFixed(2)),
@@ -113,6 +245,7 @@ const calculatePrice = ({
     shipping: parseFloat(shipping.toFixed(2)),
     tax: parseFloat(tax.toFixed(2)),
     total: parseFloat(total.toFixed(2)),
+    aiAnalysis,
   };
 };
 

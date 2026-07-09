@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingCart, Package, Truck, CreditCard, ArrowRight,
-  CheckCircle2, Loader2, Info,
+  CheckCircle2, Loader2, Info, Cpu, Check, RefreshCw
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Input from '@/components/ui/Input';
@@ -16,6 +16,14 @@ const SHIPPING_METHODS = [
   { id: 'standard', label: 'Standard Shipping', price: 5.99, days: '5-7 business days' },
   { id: 'express', label: 'Express Shipping', price: 12.99, days: '2-3 business days' },
   { id: 'overnight', label: 'Overnight Shipping', price: 24.99, days: 'Next business day' },
+];
+
+const scanSteps = [
+  'Initializing CustomFlex AI Pricing Engine...',
+  'Scanning design canvas vector paths & text layers...',
+  'Analyzing color gamut and ink density coefficients...',
+  'Assessing artist template demand and market value...',
+  'Generating custom optimized price...'
 ];
 
 const Checkout = () => {
@@ -33,6 +41,49 @@ const Checkout = () => {
 
   const [options, setOptions] = useState({ material: 'standard', printArea: 'front', size: '', color: '', quantity: 1, shippingMethod: 'standard' });
   const [address, setAddress] = useState({ fullName: '', address: '', city: '', state: '', postalCode: '', country: 'US', phone: '' });
+
+  const [design, setDesign] = useState(null);
+  const [isLoadingDesign, setIsLoadingDesign] = useState(false);
+  const [aiScanStatus, setAiScanStatus] = useState('idle'); // 'idle' | 'scanning' | 'completed'
+  const [activeScanStep, setActiveScanStep] = useState(0);
+
+  // Load design details
+  useEffect(() => {
+    if (!designId) return;
+    const loadDesign = async () => {
+      setIsLoadingDesign(true);
+      try {
+        const { data } = await api.get(`/designs/${designId}`);
+        setDesign(data.design);
+      } catch (err) {
+        toast.error('Failed to load design details');
+      } finally {
+        setIsLoadingDesign(false);
+      }
+    };
+    loadDesign();
+  }, [designId]);
+
+  // Simulate scanning when design is first loaded
+  useEffect(() => {
+    if (!design) return;
+    
+    setAiScanStatus('scanning');
+    setActiveScanStep(0);
+    
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      if (currentStep < scanSteps.length) {
+        setActiveScanStep(currentStep);
+      } else {
+        clearInterval(interval);
+        setAiScanStatus('completed');
+      }
+    }, 450);
+    
+    return () => clearInterval(interval);
+  }, [design]);
 
   // Load products for category
   useEffect(() => {
@@ -63,6 +114,7 @@ const Checkout = () => {
           printArea: options.printArea,
           quantity: options.quantity,
           shippingMethod: options.shippingMethod,
+          designId,
         });
         setPricing(data.pricing);
       } catch {
@@ -73,7 +125,7 @@ const Checkout = () => {
     };
     const timer = setTimeout(calculate, 300);
     return () => clearTimeout(timer);
-  }, [options, selectedProduct]);
+  }, [options, selectedProduct, designId]);
 
   const handleCheckout = async () => {
     if (!designId) { toast.error('No design selected'); return; }
@@ -117,6 +169,189 @@ const Checkout = () => {
         <div className="grid lg:grid-cols-[1fr_380px] gap-8">
           {/* Left — Options */}
           <div className="space-y-6">
+            {/* AI Pricing scan widget */}
+            {design && (
+              <div className="glass-card p-6 mb-6 overflow-hidden relative border border-brand-500/20 shadow-[0_8px_32px_rgba(99,102,241,0.1)]">
+                {/* Visual scan animation stylesheet */}
+                <style dangerouslySetInnerHTML={{ __html: `
+                  @keyframes scan-animation {
+                    0% { top: 0%; opacity: 0.3; }
+                    50% { top: 100%; opacity: 1; filter: drop-shadow(0 0 8px rgba(99,102,241,0.8)); }
+                    100% { top: 0%; opacity: 0.3; }
+                  }
+                  .animate-scan {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: linear-gradient(90deg, transparent, #8b5cf6, #6366f1, #8b5cf6, transparent);
+                    box-shadow: 0 0 10px #6366f1, 0 0 20px #8b5cf6;
+                    animation: scan-animation 2.2s ease-in-out infinite;
+                  }
+                `}} />
+
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  {/* Thumbnail / Scanning effect */}
+                  <div className="w-full md:w-44 flex-shrink-0 flex justify-center">
+                    <div className="relative w-40 h-40 rounded-xl overflow-hidden border border-glass-border bg-dark-900 flex items-center justify-center group shadow-inner">
+                      {design.thumbnail?.url ? (
+                        <img src={design.thumbnail.url} alt={design.title} className="w-full h-full object-contain" />
+                      ) : (
+                        <Cpu className="w-12 h-12 text-dark-500" />
+                      )}
+                      
+                      {/* Laser overlay */}
+                      {aiScanStatus === 'scanning' && (
+                        <>
+                          <div className="absolute inset-0 bg-brand-500/5 backdrop-blur-[0.5px]" />
+                          <div className="animate-scan" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* AI Analysis and Status */}
+                  <div className="flex-1 space-y-4 w-full">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                          <Cpu className="w-5 h-5 text-brand-400 animate-pulse" />
+                          CustomFlex AI Pricing Engine
+                        </h2>
+                        <p className="text-xs text-dark-400 mt-0.5">Predicting dynamic manufacturing & design value</p>
+                      </div>
+                      
+                      {aiScanStatus === 'scanning' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20 animate-pulse">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Scanning Design...
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3" /> AI Scan Complete
+                        </span>
+                      )}
+                    </div>
+
+                    {aiScanStatus === 'scanning' ? (
+                      <div className="space-y-3 py-2">
+                        {/* Scanning Step Progress */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-xs text-dark-300">
+                            <span>Scan Progress</span>
+                            <span>{Math.round(((activeScanStep + 1) / scanSteps.length) * 100)}%</span>
+                          </div>
+                          <div className="w-full bg-dark-800 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className="bg-brand-500 h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${((activeScanStep + 1) / scanSteps.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-sm font-medium text-brand-300 italic animate-pulse">
+                          {scanSteps[activeScanStep]}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {isCalculating ? (
+                          <div className="flex flex-col items-center justify-center py-8">
+                            <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
+                            <span className="text-sm text-dark-400 mt-2">Computing dynamic pricing...</span>
+                          </div>
+                        ) : pricing ? (
+                          <>
+                            {/* AI Estimated Price */}
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 shadow-lg shadow-brand-500/5">
+                              <div className="flex-1">
+                                <span className="text-[10px] uppercase font-bold text-brand-300 block">AI Predicted Base Price</span>
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-2xl font-black text-white">{formatPrice(pricing.basePrice)}</span>
+                                  {pricing.aiAnalysis?.originalBasePrice !== pricing.basePrice && (
+                                    <span className="text-xs line-through text-dark-500 font-normal">
+                                      {formatPrice(pricing.aiAnalysis.originalBasePrice)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[10px] uppercase font-bold text-emerald-400 block">AI Confidence</span>
+                                <span className="text-sm font-bold text-white">98%</span>
+                              </div>
+                            </div>
+
+                            {/* Stats / Metrics */}
+                            {pricing.aiAnalysis && (
+                              <div className="grid grid-cols-3 gap-3">
+                                {[
+                                  { label: 'Complexity', score: pricing.aiAnalysis.complexityScore, color: 'from-blue-500 to-indigo-500' },
+                                  { label: 'Ink Density', score: pricing.aiAnalysis.inkDensityScore, color: 'from-purple-500 to-pink-500' },
+                                  { label: 'Mfg Load', score: pricing.aiAnalysis.manufacturingLoadScore, color: 'from-emerald-500 to-teal-500' },
+                                ].map((stat) => (
+                                  <div key={stat.label} className="bg-dark-900/50 border border-glass-border p-2.5 rounded-xl text-center">
+                                    <span className="text-[10px] uppercase font-bold text-dark-400 block mb-1">{stat.label}</span>
+                                    <span className="text-base font-black text-white">{stat.score}%</span>
+                                    <div className="w-full bg-dark-800 h-1 rounded-full overflow-hidden mt-1.5">
+                                      <div className={`h-1 bg-gradient-to-r ${stat.color} rounded-full`} style={{ width: `${stat.score}%` }} />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Insights checklist */}
+                            {pricing.aiAnalysis?.insights?.length > 0 && (
+                              <div className="bg-dark-900/40 border border-glass-border rounded-xl p-3 space-y-2">
+                                <span className="text-xs font-semibold text-white block mb-1">AI Valuation Insights:</span>
+                                {pricing.aiAnalysis.insights.map((insight, idx) => {
+                                  const isDiscount = insight.includes('-') || insight.toLowerCase().includes('discount');
+                                  const isFee = insight.includes('+') || insight.toLowerCase().includes('fee');
+                                  return (
+                                    <div key={idx} className="flex items-start gap-2 text-xs">
+                                      <Check className={`w-3.5 h-3.5 mt-0.5 ${isDiscount ? 'text-emerald-400' : isFee ? 'text-brand-400' : 'text-dark-400'}`} />
+                                      <span className={isDiscount ? 'text-emerald-300 font-medium' : isFee ? 'text-brand-300' : 'text-dark-300'}>
+                                        {insight}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-xs text-dark-500 text-center py-6">
+                            No product options selected. Select a product to view AI insights.
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2 border-t border-glass-border text-xs">
+                          <span className="text-dark-400">Predicted for: <strong className="text-white font-medium">{design.title}</strong></span>
+                          <button 
+                            onClick={() => {
+                              setAiScanStatus('scanning');
+                              setActiveScanStep(0);
+                              let currentStep = 0;
+                              const interval = setInterval(() => {
+                                currentStep++;
+                                if (currentStep < scanSteps.length) {
+                                  setActiveScanStep(currentStep);
+                                } else {
+                                  clearInterval(interval);
+                                  setAiScanStatus('completed');
+                                }
+                              }, 300);
+                            }}
+                            className="text-brand-400 hover:text-brand-300 flex items-center gap-1 font-semibold transition-colors"
+                          >
+                            <RefreshCw className="w-3 h-3" /> Re-scan Design
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Product selection */}
             <div className="glass-card p-6">
               <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -231,7 +466,17 @@ const Checkout = () => {
               ) : pricing && (
                 <div className="space-y-2.5">
                   {[
-                    { label: 'Base Price', value: formatPrice(pricing.basePrice) },
+                    {
+                      label: 'Base Price',
+                      value: pricing.aiAnalysis?.aiPricePredictionApplied && pricing.aiAnalysis?.originalBasePrice !== pricing.basePrice ? (
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <span className="line-through text-dark-500 font-normal text-xs">{formatPrice(pricing.aiAnalysis.originalBasePrice)}</span>
+                          <span className="text-emerald-400 font-bold">{formatPrice(pricing.basePrice)}</span>
+                        </div>
+                      ) : (
+                        formatPrice(pricing.basePrice)
+                      )
+                    },
                     { label: `Quantity (×${pricing.quantity})`, value: formatPrice(pricing.subtotal) },
                     pricing.quantityDiscount > 0 && { label: 'Quantity Discount', value: `-${formatPrice(pricing.quantityDiscount)}`, green: true },
                     pricing.aiComplexityFee > 0 && { label: 'AI Complexity Fee', value: formatPrice(pricing.aiComplexityFee) },

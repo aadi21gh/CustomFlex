@@ -7,11 +7,31 @@ const { calculatePrice } = require('../utils/priceCalculator');
 
 // @desc    Calculate price
 // @route   POST /api/orders/calculate-price
-// @access  Private
+// @access  Private/Public (Optional auth)
 exports.calculateOrderPrice = async (req, res, next) => {
   try {
-    const { category, subcategory, material, printArea, aiComplexityScore, quantity, shippingMethod } = req.body;
-    const pricing = calculatePrice({ category, subcategory, material, printArea, aiComplexityScore, quantity, shippingMethod });
+    const { category, subcategory, material, printArea, aiComplexityScore, quantity, shippingMethod, designId } = req.body;
+    
+    let design = null;
+    if (designId) {
+      design = await Design.findById(designId);
+      if (design && !design.isPublic) {
+        if (!req.user || design.user.toString() !== req.user.id.toString()) {
+          design = null;
+        }
+      }
+    }
+
+    const pricing = calculatePrice({
+      category,
+      subcategory,
+      material,
+      printArea,
+      aiComplexityScore: design ? (design.aiComplexityScore || 0) : (aiComplexityScore || 0),
+      quantity,
+      shippingMethod,
+      design
+    });
     res.status(200).json({ success: true, pricing });
   } catch (error) {
     next(error);
@@ -42,6 +62,7 @@ exports.createCheckoutSession = async (req, res, next) => {
       aiComplexityScore: design.aiComplexityScore || aiComplexityScore || 0,
       quantity: quantity || 1,
       shippingMethod: shippingMethod || 'standard',
+      design,
     });
 
     // Create a pending order

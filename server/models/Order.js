@@ -32,6 +32,7 @@ const orderSchema = new mongoose.Schema(
     selectedColor: String,
     pricing: {
       basePrice: Number,
+      originalBasePrice: Number,
       materialModifier: Number,
       printAreaModifier: Number,
       aiComplexityFee: Number,
@@ -39,6 +40,7 @@ const orderSchema = new mongoose.Schema(
       tax: Number,
       shipping: Number,
       total: Number,
+      aiAnalysis: mongoose.Schema.Types.Mixed,
     },
     shippingAddress: {
       fullName: String,
