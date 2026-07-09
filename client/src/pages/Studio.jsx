@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Save, Undo2, Redo2, ZoomIn, ZoomOut, Grid3X3, Eye, EyeOff,
-  Download, Share2, ArrowLeft, Loader2, ShoppingCart,
+  Download, Share2, ArrowLeft, Loader2, ShoppingCart, Palette, Settings
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StudioProvider, useStudio } from '@/context/StudioContext';
@@ -26,6 +26,8 @@ const StudioContent = ({ category, designId: editId }) => {
   const [leftPanel, setLeftPanel] = useState('shapes'); // 'shapes' | 'ai'
   const [showPreview, setShowPreview] = useState(false);
   const [isLoadingDesign, setIsLoadingDesign] = useState(false);
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
 
   // Set category on mount
   useEffect(() => {
@@ -98,16 +100,26 @@ const StudioContent = ({ category, designId: editId }) => {
       {/* Top Bar */}
       <div className="h-14 flex-shrink-0 flex items-center gap-4 px-4 border-b border-glass-border bg-dark-900/80 backdrop-blur-xl">
         {/* Left */}
-        <div className="flex items-center gap-3 flex-1">
-          <button onClick={() => navigate(-1)} className="toolbar-btn" title="Go back">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+          <button onClick={() => navigate(-1)} className="toolbar-btn animate-fadeIn" title="Go back">
             <ArrowLeft className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => {
+              setShowLeftPanel(!showLeftPanel);
+              setShowRightPanel(false);
+            }} 
+            className={`toolbar-btn md:hidden ${showLeftPanel ? 'bg-brand-500/20 text-brand-300' : ''}`}
+            title="Toggle Elements"
+          >
+            <Palette className="w-4 h-4" />
           </button>
           <div className="w-px h-5 bg-glass-border" />
           {/* Editable title */}
           <input
             value={designTitle}
             onChange={(e) => setDesignTitle(e.target.value)}
-            className="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-glass-border focus:border-brand-500 transition-colors px-1 py-0.5 max-w-xs"
+            className="bg-transparent text-xs sm:text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-glass-border focus:border-brand-500 transition-colors px-1 py-0.5 max-w-[100px] sm:max-w-xs"
             id="design-title-input"
           />
         </div>
@@ -118,10 +130,10 @@ const StudioContent = ({ category, designId: editId }) => {
           <button onClick={redo} disabled={!canRedo} className="toolbar-btn disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
           <div className="w-px h-5 bg-glass-border mx-1" />
           <button onClick={() => handleZoom('out')} className="toolbar-btn" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
-          <span className="text-xs text-dark-400 w-12 text-center font-mono">{Math.round(zoom * 100)}%</span>
+          <span className="text-xs text-dark-400 w-10 text-center font-mono hidden sm:inline-block">{Math.round(zoom * 100)}%</span>
           <button onClick={() => handleZoom('in')} className="toolbar-btn" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
-          <div className="w-px h-5 bg-glass-border mx-1" />
-          <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''}`} title="Toggle grid">
+          <div className="w-px h-5 bg-glass-border mx-1 hidden sm:block" />
+          <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''} hidden sm:flex`} title="Toggle grid">
             <Grid3X3 className="w-4 h-4" />
           </button>
           <button onClick={() => setShowPreview(!showPreview)} className={`toolbar-btn ${showPreview ? 'active' : ''}`} title="Product preview">
@@ -130,41 +142,50 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
 
         {/* Right — Actions */}
-        <div className="flex items-center gap-2 flex-1 justify-end">
-          <button onClick={handleSaveDraft} className="toolbar-btn text-xs gap-1.5 px-3 !w-auto" title="Save as draft">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end">
+          <button 
+            onClick={() => {
+              setShowRightPanel(!showRightPanel);
+              setShowLeftPanel(false);
+            }} 
+            className={`toolbar-btn md:hidden ${showRightPanel ? 'bg-brand-500/20 text-brand-300' : ''}`}
+            title="Toggle Properties"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button onClick={handleSaveDraft} className="toolbar-btn text-xs gap-1.5 px-3 !w-auto hidden sm:flex" title="Save as draft">
             <Save className="w-3.5 h-3.5" />
             Draft
           </button>
-          <button onClick={handleExport} className="toolbar-btn text-xs gap-1.5 px-3 !w-auto" title="Export PNG">
+          <button onClick={handleExport} className="toolbar-btn text-xs gap-1.5 px-2.5 sm:px-3 !w-auto" title="Export PNG">
             <Download className="w-3.5 h-3.5" />
-            Export
+            <span className="hidden sm:inline">Export</span>
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
-            style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white transition-all bg-white/5 border border-glass-border hover:bg-white/10"
             title="Save design"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Save</span>
           </button>
           <button
             onClick={handleCheckout}
             disabled={isSaving}
-            className="btn-primary !py-2 !px-4 text-sm"
+            className="btn-primary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-xs sm:text-sm"
             id="studio-checkout-btn"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-3.5 h-3.5" />
             Order
           </button>
         </div>
       </div>
 
       {/* Main Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Left Panel */}
-        <div className="w-64 flex-shrink-0 flex flex-col border-r border-glass-border bg-dark-900/60">
+        <div className={`w-64 flex-shrink-0 flex flex-col border-r border-glass-border bg-dark-950/95 fixed md:relative z-20 top-0 bottom-0 left-0 transition-transform duration-300 md:translate-x-0 ${showLeftPanel ? 'translate-x-0' : '-translate-x-full'}`}>
           {/* Tab switcher */}
           <div className="flex border-b border-glass-border">
             {[
@@ -196,7 +217,7 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
 
         {/* Right Panel */}
-        <div className="w-72 flex-shrink-0 flex flex-col border-l border-glass-border bg-dark-900/60">
+        <div className={`w-72 flex-shrink-0 flex flex-col border-l border-glass-border bg-dark-950/95 fixed md:relative z-20 top-0 bottom-0 right-0 transition-transform duration-300 md:translate-x-0 ${showRightPanel ? 'translate-x-0' : 'translate-x-full'}`}>
           {/* Layers Panel (top) */}
           <div className="h-64 border-b border-glass-border">
             <LayersPanel />
