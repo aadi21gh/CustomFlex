@@ -25,44 +25,48 @@ passport.use(
 );
 
 // Google OAuth Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
-      scope: ['profile', 'email'],
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        // Check if user exists
-        let user = await User.findOne({ googleId: profile.id });
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'your_google_client_id') {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: process.env.GOOGLE_CALLBACK_URL,
+        scope: ['profile', 'email'],
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          // Check if user exists
+          let user = await User.findOne({ googleId: profile.id });
 
-        if (!user) {
-          // Check if email already registered
-          user = await User.findOne({ email: profile.emails[0].value });
-          if (user) {
-            user.googleId = profile.id;
-            user.avatar = user.avatar || profile.photos[0]?.value;
-            await user.save();
-          } else {
-            user = await User.create({
-              googleId: profile.id,
-              name: profile.displayName,
-              email: profile.emails[0].value,
-              avatar: profile.photos[0]?.value,
-              isEmailVerified: true,
-            });
+          if (!user) {
+            // Check if email already registered
+            user = await User.findOne({ email: profile.emails[0].value });
+            if (user) {
+              user.googleId = profile.id;
+              user.avatar = user.avatar || profile.photos[0]?.value;
+              await user.save();
+            } else {
+              user = await User.create({
+                googleId: profile.id,
+                name: profile.displayName,
+                email: profile.emails[0].value,
+                avatar: profile.photos[0]?.value,
+                isEmailVerified: true,
+              });
+            }
           }
-        }
 
-        return done(null, user);
-      } catch (err) {
-        return done(err, false);
+          return done(null, user);
+        } catch (err) {
+          return done(err, false);
+        }
       }
-    }
-  )
-);
+    )
+  );
+} else {
+  console.log('⚠️ Google OAuth is not configured. Google Sign-In will be disabled.');
+}
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
