@@ -1,16 +1,47 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { fabric } from 'fabric';
 import { useStudio } from '@/context/StudioContext';
 import { CANVAS_DIMENSIONS } from '@/lib/utils';
 
 const StudioCanvas = ({ category }) => {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [scale, setScale] = useState(1);
   const {
     fabricRef, setActiveObject, syncLayers, pushHistory,
     gridVisible, snapToGrid, zoom,
   } = useStudio();
 
   const dims = CANVAS_DIMENSIONS[category] || CANVAS_DIMENSIONS.artwork;
+
+  // Mobile/viewport responsive scaling
+  useEffect(() => {
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.clientWidth;
+      const containerHeight = containerRef.current.clientHeight;
+      const fitWidth = containerWidth - 32;
+      const fitHeight = containerHeight - 32;
+
+      const scaleX = fitWidth / dims.width;
+      const scaleY = fitHeight / dims.height;
+
+      // Fit inside container but do not zoom past 100% (1.0)
+      const newScale = Math.min(scaleX, scaleY, 1);
+      setScale(newScale);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    // Also run a small timeout to let the page settle on slow load
+    const timer = setTimeout(handleResize, 100);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, [dims.width, dims.height]);
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -136,14 +167,19 @@ const StudioCanvas = ({ category }) => {
   // Center the canvas in the viewport
   return (
     <div
-      className="flex-1 overflow-auto flex items-center justify-center p-8"
+      ref={containerRef}
+      className="flex-1 overflow-hidden flex items-center justify-center p-4 sm:p-8"
       style={{ background: 'repeating-conic-gradient(rgba(255,255,255,0.02) 0% 25%, transparent 0% 50%) 0 0 / 32px 32px' }}
     >
       <div
-        className="relative"
+        className="relative transition-all duration-200"
         style={{
           boxShadow: '0 0 0 1px rgba(99,102,241,0.3), 0 20px 60px rgba(0,0,0,0.5)',
           borderRadius: 4,
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          width: dims.width,
+          height: dims.height,
         }}
       >
         <canvas ref={canvasRef} id="studio-canvas" />

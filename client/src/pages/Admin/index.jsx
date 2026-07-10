@@ -238,10 +238,18 @@ const AdminPanel = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="font-semibold text-white">{o.orderNumber}</span>
-                        <span className="text-xs text-dark-400capitalize">· {o.category}</span>
+                        <span className="text-xs text-dark-400 capitalize">· {o.design?.category || 'custom'}</span>
                       </div>
                       <p className="text-xs text-dark-300">Customer: {o.user?.name} ({o.user?.email})</p>
-                      <p className="text-xs text-dark-400 mt-1">Material: {o.material} · Print Area: {o.printArea}</p>
+                      <p className="text-xs text-dark-400 mt-1">
+                        Material: {o.selectedMaterial?.replace(/-/g, ' ') || 'standard'} · Print Area: {o.selectedPrintArea?.replace(/-/g, ' ') || 'standard'}
+                        {o.selectedSize && ` · Size: ${o.selectedSize}`}
+                        {o.pricing?.couponCode && (
+                          <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full ml-2 font-medium">
+                            Coupon: {o.pricing.couponCode} (-{formatPrice(o.pricing.couponDiscount)})
+                          </span>
+                        )}
+                      </p>
                       {o.trackingNumber && <p className="text-xs text-purple-400 mt-1">Tracking: {o.trackingNumber}</p>}
                     </div>
 

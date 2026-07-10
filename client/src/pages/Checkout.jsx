@@ -106,7 +106,13 @@ const PriceBreakdown = ({ pricing, isLoading }) => {
       color: 'text-cyan-400',
       sub: pricing.deliveryDays,
     },
-  ];
+    pricing.couponDiscount > 0 ? {
+      label: `Coupon (${pricing.couponCode})`,
+      value: `−${formatPrice(pricing.couponDiscount)}`,
+      icon: <Tag className="w-3.5 h-3.5 text-emerald-400" />,
+      color: 'text-emerald-400',
+    } : null,
+  ].filter(Boolean);
 
   return (
     <div className="space-y-0">
@@ -314,6 +320,11 @@ const Checkout = () => {
     postalCode: '', country: 'IN', phone: '',
   });
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState('');
+  const [couponError, setCouponError] = useState('');
+
   // Load design
   useEffect(() => {
     if (!designId) return;
@@ -333,7 +344,7 @@ const Checkout = () => {
       .finally(() => setIsLoadingProducts(false));
   }, [category]);
 
-  // Recalculate price whenever options or product changes
+  // Recalculate price whenever options, product, or applied coupon changes
   const recalculate = useCallback(async () => {
     if (!selectedProduct) return;
     setIsCalculating(true);
@@ -346,6 +357,7 @@ const Checkout = () => {
         quantity: options.quantity,
         deliveryMethod: options.deliveryMethod,
         productId: selectedProduct._id,
+        couponCode: appliedCoupon,
       });
       setPricing(data.pricing);
     } catch {
@@ -353,12 +365,51 @@ const Checkout = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, [options, selectedProduct, category]);
+  }, [options, selectedProduct, category, appliedCoupon]);
 
   useEffect(() => {
     const timer = setTimeout(recalculate, 250);
     return () => clearTimeout(timer);
   }, [recalculate]);
+
+  // Coupon validation
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !selectedProduct) return;
+    setIsCalculating(true);
+    setCouponError('');
+    try {
+      const { data } = await api.post('/orders/calculate-price', {
+        category,
+        subcategory: selectedProduct.subcategory,
+        material: options.material,
+        printArea: options.printArea,
+        quantity: options.quantity,
+        deliveryMethod: options.deliveryMethod,
+        productId: selectedProduct._id,
+        couponCode: couponCode.trim(),
+      });
+      if (data.pricing.couponError) {
+        setCouponError(data.pricing.couponError);
+        toast.error(data.pricing.couponError);
+      } else if (data.pricing.couponCode) {
+        setAppliedCoupon(data.pricing.couponCode);
+        setPricing(data.pricing);
+        toast.success(`Coupon "${data.pricing.couponCode}" applied! 🎉`);
+      } else {
+        toast.error('Invalid coupon code');
+      }
+    } catch (err) {
+      toast.error('Failed to validate coupon code');
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon('');
+    setCouponCode('');
+    setCouponError('');
+  };
 
   const handleCheckout = async () => {
     if (!designId)         { toast.error('No design selected'); return; }
@@ -379,8 +430,14 @@ const Checkout = () => {
         color: options.color,
         deliveryMethod: options.deliveryMethod,
         shippingAddress: address,
+        couponCode: appliedCoupon,
       });
-      if (data.sessionUrl) window.location.href = data.sessionUrl;
+      if (data.isFree) {
+        toast.success('Order placed successfully! 🎉');
+        navigate(`/dashboard/orders?success=true&orderId=${data.orderId}`);
+      } else if (data.sessionUrl) {
+        window.location.href = data.sessionUrl;
+      }
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Checkout failed');
     } finally {
@@ -627,7 +684,58 @@ const Checkout = () => {
                 </p>
               </div>
 
-              {/* Checkout button */}
+              {/* Dashed divider */}
+              <div className="my-4 border-t border-dashed border-glass-border" />
+
+              {/* Coupon Code Section */}
+              <div className="mb-4">
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter coupon (e.g. FIRST)"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      className="flex-1 input-field !py-2 text-sm uppercase"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleApplyCoupon();
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={handleApplyCoupon}
+                      variant="secondary"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={isCalculating || !couponCode.trim()}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-emerald-400" />
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase">{appliedCoupon}</span>
+                        <span className="text-[10px] text-emerald-400 ml-2">Applied</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-xs text-dark-400 hover:text-red-400 transition-colors px-2 py-1"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="text-xs text-red-400 mt-1.5 ml-1">{couponError}</p>
+                )}
+              </div>
+
               <Button
                 onClick={handleCheckout}
                 disabled={!pricing || isCheckingOut || !selectedProduct}

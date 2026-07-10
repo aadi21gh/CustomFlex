@@ -40,6 +40,8 @@ const orderSchema = new mongoose.Schema(
       tax: Number,
       shipping: Number,
       total: Number,
+      couponCode: String,
+      couponDiscount: { type: Number, default: 0 },
       aiAnalysis: mongoose.Schema.Types.Mixed,
     },
     shippingAddress: {

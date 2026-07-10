@@ -13,6 +13,7 @@ exports.calculateOrderPrice = async (req, res, next) => {
     const {
       category, subcategory, material, printArea,
       quantity, deliveryMethod, designId, productId,
+      couponCode,
     } = req.body;
 
     // Optionally fetch product for any price overrides
@@ -39,6 +40,7 @@ exports.calculateOrderPrice = async (req, res, next) => {
       customBasePrice,
       customDesignCharge,
       customDeliveryCharge,
+      couponCode,
     });
 
     res.status(200).json({ success: true, pricing });
@@ -54,7 +56,7 @@ exports.createCheckoutSession = async (req, res, next) => {
   try {
     const {
       designId, productId, quantity, material, printArea,
-      size, color, deliveryMethod, shippingAddress,
+      size, color, deliveryMethod, shippingAddress, couponCode,
     } = req.body;
 
     const design = await Design.findById(designId);
@@ -73,6 +75,7 @@ exports.createCheckoutSession = async (req, res, next) => {
       customBasePrice: product.basePrice || null,
       customDesignCharge: product.designCharge !== undefined ? product.designCharge : null,
       customDeliveryCharge: product.deliveryCharge !== undefined ? product.deliveryCharge : null,
+      couponCode,
     });
 
     // Create pending order record
@@ -95,10 +98,39 @@ exports.createCheckoutSession = async (req, res, next) => {
         tax: 0,
         shipping: pricing.deliveryCharge,
         total: pricing.total,
+        couponCode: pricing.couponCode,
+        couponDiscount: pricing.couponDiscount,
       },
       shippingAddress,
       designSnapshot: design.thumbnail?.url,
     });
+
+    // Check if order is completely free (total is 0)
+    if (pricing.total === 0) {
+      order.isPaid = true;
+      order.paidAt = new Date();
+      order.status = 'paid';
+      await order.save();
+
+      // Increment design purchase count
+      await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
+
+      // In-app notification
+      await Notification.create({
+        recipient: req.user.id,
+        type: 'order_placed',
+        message: `Your order ${order.orderNumber} has been confirmed! 🎉`,
+        link: `/dashboard/orders`,
+        meta: { orderId: order._id },
+      });
+
+      return res.status(200).json({
+        success: true,
+        isFree: true,
+        orderId: order._id,
+        successUrl: `${process.env.CLIENT_URL}/dashboard/orders?success=true&orderId=${order._id}`,
+      });
+    }
 
     // Create Stripe checkout session (INR)
     const session = await stripe.checkout.sessions.create({

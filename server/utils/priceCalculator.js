@@ -106,6 +106,11 @@ const DEFAULT_PRINT_AREA = {
   accessories: 'standard',
 };
 
+const VALID_COUPONS = {
+  FIRST: { code: 'FIRST', discountType: 'percentage', discountValue: 25 },
+  SIDDHI: { code: 'SIDDHI', discountType: 'percentage', discountValue: 100 },
+};
+
 /**
  * calculatePrice — Universal pricing engine
  *
@@ -119,6 +124,7 @@ const DEFAULT_PRINT_AREA = {
  * @param {number} [params.customBasePrice] - Override base price (for DB-fetched products)
  * @param {number} [params.customDesignCharge] - Override design charge (from Product model)
  * @param {number} [params.customDeliveryCharge] - Override delivery charge (from Product model)
+ * @param {string} [params.couponCode]   - Coupon code to apply
  * @returns {Object} Full price breakdown
  */
 const calculatePrice = ({
@@ -131,6 +137,7 @@ const calculatePrice = ({
   customBasePrice = null,
   customDesignCharge = null,
   customDeliveryCharge = null,
+  couponCode = null,
 }) => {
   // 1. Base product price
   const categoryPrices = BASE_PRICES[category] || BASE_PRICES.clothing;
@@ -170,8 +177,27 @@ const calculatePrice = ({
 
   const discountedTotal = itemsTotal - quantityDiscount;
 
-  // 8. Final total
+  // 8. Final total before coupon
   const total = discountedTotal + deliveryCharge;
+
+  // 9. Apply coupon if valid
+  let couponDiscount = 0;
+  let isCouponValid = false;
+  let couponError = null;
+
+  if (couponCode) {
+    const coupon = VALID_COUPONS[couponCode.toUpperCase().trim()];
+    if (coupon) {
+      isCouponValid = true;
+      if (coupon.discountType === 'percentage') {
+        couponDiscount = Math.round(total * (coupon.discountValue / 100));
+      }
+    } else {
+      couponError = 'Invalid coupon code';
+    }
+  }
+
+  const finalTotal = Math.max(0, total - couponDiscount);
 
   return {
     // Breakdown line items (what the UI shows)
@@ -191,7 +217,11 @@ const calculatePrice = ({
     itemsTotal,
     quantityDiscount,
     discountedTotal,
-    total,
+    total: finalTotal,
+    originalTotal: total,
+    couponCode: isCouponValid ? couponCode.toUpperCase().trim() : null,
+    couponDiscount,
+    couponError,
 
     // Currency
     currency: 'INR',

@@ -360,7 +360,7 @@ const StudioContent = ({ category, designId: editId }) => {
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left Panel */}
-        <div className={`w-64 flex-shrink-0 flex flex-col border-r border-glass-border bg-dark-950/95 fixed md:relative z-20 top-0 bottom-0 left-0 transition-transform duration-300 md:translate-x-0 ${showLeftPanel ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`w-64 flex-shrink-0 flex flex-col border-r border-glass-border bg-dark-950/95 fixed md:relative z-20 top-14 md:top-0 bottom-0 left-0 transition-transform duration-300 md:translate-x-0 ${showLeftPanel ? 'translate-x-0' : '-translate-x-full'}`}>
           {/* Tab switcher */}
           <div className="flex border-b border-glass-border">
             {[
@@ -392,12 +392,12 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
 
         {/* Right Panel */}
-        <div className={`w-72 flex-shrink-0 flex flex-col border-l border-glass-border bg-dark-950/95 fixed md:relative z-20 top-0 bottom-0 right-0 transition-transform duration-300 md:translate-x-0 ${showRightPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className={`w-72 flex-shrink-0 flex flex-col border-l border-glass-border bg-dark-950/95 fixed md:relative z-20 top-14 md:top-0 bottom-0 right-0 transition-transform duration-300 md:translate-x-0 ${showRightPanel ? 'translate-x-0' : 'translate-x-full'}`}>
           {/* Layers Panel (top) */}
           <div className="h-64 border-b border-glass-border">
             <LayersPanel />
           </div>
-          {/* Properties Panel (bottom) */}
+
           <div className="flex-1 overflow-y-auto">
             <PropertiesPanel />
           </div>

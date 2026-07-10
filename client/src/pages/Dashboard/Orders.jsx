@@ -49,7 +49,7 @@ const Orders = () => {
                         {statusConf.label}
                       </span>
                     </div>
-                    <p className="text-xs text-dark-400 mt-0.5">{formatDate(order.createdAt)} · {order.category}</p>
+                    <p className="text-xs text-dark-400 mt-0.5">{formatDate(order.createdAt)} · {order.design?.category || 'custom'}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-bold text-white">{formatPrice(order.pricing?.total || 0)}</p>
@@ -57,7 +57,7 @@ const Orders = () => {
                   </div>
                   {isExpanded ? <ChevronUp className="w-4 h-4 text-dark-400" /> : <ChevronDown className="w-4 h-4 text-dark-400" />}
                 </div>
-
+ 
                 {isExpanded && (
                   <motion.div
                     className="border-t border-glass-border p-5 space-y-3"
@@ -73,14 +73,21 @@ const Orders = () => {
                       </div>
                       <div>
                         <p className="text-dark-400 text-xs mb-1">Order Details</p>
-                        <p className="text-dark-200 capitalize">Material: {order.material}</p>
-                        <p className="text-dark-200 capitalize">Print: {order.printArea}</p>
+                        <p className="text-dark-200 capitalize">Material: {order.selectedMaterial?.replace(/-/g, ' ') || 'standard'}</p>
+                        <p className="text-dark-200 capitalize">Print: {order.selectedPrintArea?.replace(/-/g, ' ') || 'standard'}</p>
+                        {order.selectedSize && <p className="text-dark-200 uppercase">Size: {order.selectedSize}</p>}
+                        {order.selectedColor && <p className="text-dark-200 capitalize">Color: {order.selectedColor}</p>}
+                        {order.pricing?.couponCode && (
+                          <p className="text-emerald-400 text-xs mt-1 font-medium">
+                            Coupon: {order.pricing.couponCode} (-{formatPrice(order.pricing.couponDiscount)})
+                          </p>
+                        )}
                         {order.trackingNumber && <p className="text-brand-400 text-xs mt-1">Tracking: {order.trackingNumber}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 pt-2">
                       {order.design && (
-                        <Link to={`/studio/${order.category}/${order.design}`} className="btn-secondary text-sm">
+                        <Link to={`/studio/${order.design.category}/${order.design._id}`} className="btn-secondary text-sm">
                           <ExternalLink className="w-3.5 h-3.5" /> View Design
                         </Link>
                       )}
