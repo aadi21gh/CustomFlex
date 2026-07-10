@@ -5,20 +5,27 @@ const Product = require('../models/Product');
 const Notification = require('../models/Notification');
 const { calculatePrice } = require('../utils/priceCalculator');
 
-// @desc    Calculate price
+// @desc    Calculate price (transparent pricing engine — no AI)
 // @route   POST /api/orders/calculate-price
-// @access  Private/Public (Optional auth)
+// @access  Public (optional auth)
 exports.calculateOrderPrice = async (req, res, next) => {
   try {
-    const { category, subcategory, material, printArea, aiComplexityScore, quantity, shippingMethod, designId } = req.body;
-    
-    let design = null;
-    if (designId) {
-      design = await Design.findById(designId);
-      if (design && !design.isPublic) {
-        if (!req.user || design.user.toString() !== req.user.id.toString()) {
-          design = null;
-        }
+    const {
+      category, subcategory, material, printArea,
+      quantity, deliveryMethod, designId, productId,
+    } = req.body;
+
+    // Optionally fetch product for any price overrides
+    let customBasePrice = null;
+    let customDesignCharge = null;
+    let customDeliveryCharge = null;
+
+    if (productId) {
+      const product = await Product.findById(productId);
+      if (product) {
+        customBasePrice = product.basePrice || null;
+        customDesignCharge = product.designCharge !== undefined ? product.designCharge : null;
+        customDeliveryCharge = product.deliveryCharge !== undefined ? product.deliveryCharge : null;
       }
     }
 
@@ -27,11 +34,13 @@ exports.calculateOrderPrice = async (req, res, next) => {
       subcategory,
       material,
       printArea,
-      aiComplexityScore: design ? (design.aiComplexityScore || 0) : (aiComplexityScore || 0),
-      quantity,
-      shippingMethod,
-      design
+      quantity: parseInt(quantity) || 1,
+      deliveryMethod: deliveryMethod || 'standard',
+      customBasePrice,
+      customDesignCharge,
+      customDeliveryCharge,
     });
+
     res.status(200).json({ success: true, pricing });
   } catch (error) {
     next(error);
@@ -44,8 +53,8 @@ exports.calculateOrderPrice = async (req, res, next) => {
 exports.createCheckoutSession = async (req, res, next) => {
   try {
     const {
-      designId, productId, quantity, material, printArea, size, color,
-      shippingMethod, shippingAddress, aiComplexityScore,
+      designId, productId, quantity, material, printArea,
+      size, color, deliveryMethod, shippingAddress,
     } = req.body;
 
     const design = await Design.findById(designId);
@@ -57,30 +66,41 @@ exports.createCheckoutSession = async (req, res, next) => {
     const pricing = calculatePrice({
       category: design.category,
       subcategory: product.subcategory,
-      material: material || 'standard',
+      material: material || product.defaultMaterial || 'standard',
       printArea: printArea || 'front',
-      aiComplexityScore: design.aiComplexityScore || aiComplexityScore || 0,
-      quantity: quantity || 1,
-      shippingMethod: shippingMethod || 'standard',
-      design,
+      quantity: parseInt(quantity) || 1,
+      deliveryMethod: deliveryMethod || 'standard',
+      customBasePrice: product.basePrice || null,
+      customDesignCharge: product.designCharge !== undefined ? product.designCharge : null,
+      customDeliveryCharge: product.deliveryCharge !== undefined ? product.deliveryCharge : null,
     });
 
-    // Create a pending order
+    // Create pending order record
     const order = await Order.create({
       user: req.user.id,
       design: designId,
       product: productId,
-      quantity: quantity || 1,
+      quantity: parseInt(quantity) || 1,
       selectedMaterial: material,
       selectedPrintArea: printArea,
       selectedSize: size,
       selectedColor: color,
-      pricing,
+      pricing: {
+        basePrice: pricing.basePrice,
+        originalBasePrice: pricing.basePrice,
+        materialModifier: pricing.materialPrice,    // repurposed field: stores addOn amount
+        printAreaModifier: pricing.designCharge,    // repurposed field: stores design charge
+        aiComplexityFee: 0,                         // no longer used — always 0
+        subtotal: pricing.itemsTotal,
+        tax: 0,
+        shipping: pricing.deliveryCharge,
+        total: pricing.total,
+      },
       shippingAddress,
       designSnapshot: design.thumbnail?.url,
     });
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session (INR)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -92,13 +112,19 @@ exports.createCheckoutSession = async (req, res, next) => {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'inr',
             product_data: {
               name: `${design.title} — ${product.name}`,
-              description: `Material: ${material || 'Standard'} | Print Area: ${printArea || 'Front'} | Qty: ${quantity}`,
+              description: [
+                `Material: ${pricing.materialLabel}`,
+                `Print Area: ${pricing.printAreaLabel}`,
+                `Qty: ${quantity}`,
+                `Delivery: ${pricing.deliveryLabel}`,
+              ].join(' | '),
               images: design.thumbnail?.url ? [design.thumbnail.url] : [],
             },
-            unit_amount: Math.round(pricing.total * 100), // Stripe uses cents
+            // Stripe uses smallest currency unit — paise for INR
+            unit_amount: Math.round(pricing.total * 100),
           },
           quantity: 1,
         },
@@ -110,7 +136,12 @@ exports.createCheckoutSession = async (req, res, next) => {
     order.stripeSessionId = session.id;
     await order.save();
 
-    res.status(200).json({ success: true, sessionId: session.id, sessionUrl: session.url, orderId: order._id });
+    res.status(200).json({
+      success: true,
+      sessionId: session.id,
+      sessionUrl: session.url,
+      orderId: order._id,
+    });
   } catch (error) {
     next(error);
   }
@@ -132,7 +163,7 @@ exports.getMyOrders = async (req, res, next) => {
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate('design', 'title thumbnail category')
-        .populate('product', 'name subcategory')
+        .populate('product', 'name subcategory emoji')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -195,11 +226,11 @@ exports.confirmPayment = async (req, res, next) => {
         // Increment design purchase count
         await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
 
-        // Notify
+        // In-app notification
         await Notification.create({
           recipient: req.user.id,
           type: 'order_placed',
-          message: `Your order ${order.orderNumber} has been confirmed!`,
+          message: `Your order ${order.orderNumber} has been confirmed! 🎉`,
           link: `/dashboard/orders`,
           meta: { orderId: order._id },
         });

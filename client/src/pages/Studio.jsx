@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Save, Undo2, Redo2, ZoomIn, ZoomOut, Grid3X3, Eye, EyeOff,
-  Download, Share2, ArrowLeft, Loader2, ShoppingCart, Palette, Settings
+  Download, Share2, ArrowLeft, Loader2, ShoppingCart, Palette, Settings,
+  Check, Cloud, CloudLightning
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StudioProvider, useStudio } from '@/context/StudioContext';
@@ -15,6 +16,9 @@ import ShapeLibrary from '@/components/studio/ShapeLibrary';
 import AIImageGenerator from '@/components/studio/AIImageGenerator';
 import ProductPreview from '@/components/studio/ProductPreview';
 import api from '@/lib/axios';
+
+// Clipboard state helper
+let localClipboardObj = null;
 
 const StudioContent = ({ category, designId: editId }) => {
   const {
@@ -28,6 +32,7 @@ const StudioContent = ({ category, designId: editId }) => {
   const [isLoadingDesign, setIsLoadingDesign] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'dirty'
 
   // Set category on mount
   useEffect(() => {
@@ -43,12 +48,13 @@ const StudioContent = ({ category, designId: editId }) => {
           const { data } = await api.get(`/designs/${editId}`);
           setDesignTitle(data.design.title);
           setDesignId(editId);
-          // Canvas loading is handled in Canvas component
           if (fabricRef.current && data.design.canvasData) {
             fabricRef.current.loadFromJSON(data.design.canvasData, () => {
               fabricRef.current.renderAll();
               syncLayers();
               pushHistory();
+              // Zoom to fit after loaded
+              handleZoomToFit();
             });
           }
         } catch (err) {
@@ -61,12 +67,40 @@ const StudioContent = ({ category, designId: editId }) => {
     }
   }, [editId]);
 
+  // Autosave monitor - sets status to dirty when modifications occur
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    const markDirty = () => setSaveStatus('dirty');
+    fabricRef.current.on('object:added', markDirty);
+    fabricRef.current.on('object:modified', markDirty);
+    fabricRef.current.on('object:removed', markDirty);
+    return () => {
+      if (fabricRef.current) {
+        fabricRef.current.off('object:added', markDirty);
+        fabricRef.current.off('object:modified', markDirty);
+        fabricRef.current.off('object:removed', markDirty);
+      }
+    };
+  }, [fabricRef.current]);
+
   const handleSave = async () => {
-    await saveDesign(false);
+    setSaveStatus('saving');
+    const result = await saveDesign(false);
+    if (result) {
+      setSaveStatus('saved');
+    } else {
+      setSaveStatus('dirty');
+    }
   };
 
   const handleSaveDraft = async () => {
-    await saveDesign(true);
+    setSaveStatus('saving');
+    const result = await saveDesign(true);
+    if (result) {
+      setSaveStatus('saved');
+    } else {
+      setSaveStatus('dirty');
+    }
   };
 
   const handleExport = () => {
@@ -88,12 +122,129 @@ const StudioContent = ({ category, designId: editId }) => {
     }
   };
 
+  const handleZoomToFit = () => {
+    if (!fabricRef.current) return;
+    const canvas = fabricRef.current;
+    // Simple fit logic based on wrapper dimensions (standard sizing)
+    setZoom(1);
+    canvas.setZoom(1);
+    canvas.renderAll();
+  };
+
   const handleCheckout = async () => {
+    setSaveStatus('saving');
     const savedDesign = await saveDesign(false);
     if (savedDesign) {
+      setSaveStatus('saved');
       navigate(`/checkout?designId=${savedDesign._id}&category=${category}`);
+    } else {
+      setSaveStatus('dirty');
     }
   };
+
+  /* ── Keyboard Shortcuts ── */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!fabricRef.current) return;
+      const canvas = fabricRef.current;
+      const activeObj = canvas.getActiveObject();
+
+      // Skip shortcuts if the user is typing in a text field
+      const activeEl = document.activeElement;
+      const isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.contentEditable === 'true';
+      const isITextEditing = activeObj && activeObj.isEditing;
+
+      if (isInput || isITextEditing) {
+        return;
+      }
+
+      // 1. Copy (Ctrl + C)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        if (activeObj) {
+          activeObj.clone((cloned) => {
+            localClipboardObj = cloned;
+            toast.success('Copied to clipboard', { duration: 800 });
+          });
+        }
+      }
+
+      // 2. Paste (Ctrl + V)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        if (localClipboardObj) {
+          localClipboardObj.clone((cloned) => {
+            cloned.set({
+              left: (localClipboardObj.left || 0) + 20,
+              top: (localClipboardObj.top || 0) + 20,
+              id: `clone_${Date.now()}`,
+              evented: true,
+            });
+            canvas.add(cloned);
+            canvas.setActiveObject(cloned);
+            canvas.renderAll();
+            pushHistory();
+            syncLayers();
+            localClipboardObj = cloned; // set up next paste
+          });
+        }
+      }
+
+      // 3. Duplicate (Ctrl + D)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        if (activeObj) {
+          activeObj.clone((cloned) => {
+            cloned.set({
+              left: activeObj.left + 20,
+              top: activeObj.top + 20,
+              id: `clone_${Date.now()}`,
+              customName: `${activeObj.customName || 'Layer'} copy`,
+            });
+            canvas.add(cloned);
+            canvas.setActiveObject(cloned);
+            canvas.renderAll();
+            pushHistory();
+            syncLayers();
+          });
+        }
+      }
+
+      // 4. Undo (Ctrl + Z)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undo();
+      }
+
+      // 5. Redo (Ctrl + Y)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      }
+
+      // 6. Delete / Backspace (Del / Backspace)
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        if (activeObj) {
+          canvas.remove(activeObj);
+          canvas.discardActiveObject();
+          canvas.renderAll();
+          pushHistory();
+          syncLayers();
+        }
+      }
+
+      // 7. Escape (Deselct selection)
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        canvas.discardActiveObject();
+        canvas.renderAll();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fabricRef.current, undo, redo, pushHistory, syncLayers]);
 
   return (
     <div className="h-screen bg-dark-950 flex flex-col overflow-hidden">
@@ -104,11 +255,11 @@ const StudioContent = ({ category, designId: editId }) => {
           <button onClick={() => navigate(-1)} className="toolbar-btn animate-fadeIn" title="Go back">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <button 
+          <button
             onClick={() => {
               setShowLeftPanel(!showLeftPanel);
               setShowRightPanel(false);
-            }} 
+            }}
             className={`toolbar-btn md:hidden ${showLeftPanel ? 'bg-brand-500/20 text-brand-300' : ''}`}
             title="Toggle Elements"
           >
@@ -122,6 +273,28 @@ const StudioContent = ({ category, designId: editId }) => {
             className="bg-transparent text-xs sm:text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-glass-border focus:border-brand-500 transition-colors px-1 py-0.5 max-w-[100px] sm:max-w-xs"
             id="design-title-input"
           />
+          
+          {/* Autosave Status Indicator */}
+          <div className="hidden lg:flex items-center gap-1.5 ml-2 text-xs text-dark-500 select-none">
+            {saveStatus === 'saved' && (
+              <>
+                <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-500 font-medium">All changes saved</span>
+              </>
+            )}
+            {saveStatus === 'saving' && (
+              <>
+                <Loader2 className="w-3.5 h-3.5 text-brand-400 animate-spin" />
+                <span className="text-brand-400">Saving...</span>
+              </>
+            )}
+            {saveStatus === 'dirty' && (
+              <>
+                <CloudLightning className="w-3.5 h-3.5 text-yellow-500 animate-pulse" />
+                <span className="text-yellow-500">Unsaved changes</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Center — History & Zoom */}
@@ -130,7 +303,9 @@ const StudioContent = ({ category, designId: editId }) => {
           <button onClick={redo} disabled={!canRedo} className="toolbar-btn disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
           <div className="w-px h-5 bg-glass-border mx-1" />
           <button onClick={() => handleZoom('out')} className="toolbar-btn" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
-          <span className="text-xs text-dark-400 w-10 text-center font-mono hidden sm:inline-block">{Math.round(zoom * 100)}%</span>
+          <span className="text-xs text-dark-300 w-10 text-center font-mono cursor-pointer hover:text-white transition-colors" title="Zoom to Fit" onClick={handleZoomToFit}>
+            {Math.round(zoom * 100)}%
+          </span>
           <button onClick={() => handleZoom('in')} className="toolbar-btn" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
           <div className="w-px h-5 bg-glass-border mx-1 hidden sm:block" />
           <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''} hidden sm:flex`} title="Toggle grid">
@@ -143,11 +318,11 @@ const StudioContent = ({ category, designId: editId }) => {
 
         {/* Right — Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end">
-          <button 
+          <button
             onClick={() => {
               setShowRightPanel(!showRightPanel);
               setShowLeftPanel(false);
-            }} 
+            }}
             className={`toolbar-btn md:hidden ${showRightPanel ? 'bg-brand-500/20 text-brand-300' : ''}`}
             title="Toggle Properties"
           >
@@ -173,7 +348,7 @@ const StudioContent = ({ category, designId: editId }) => {
           <button
             onClick={handleCheckout}
             disabled={isSaving}
-            className="btn-primary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-xs sm:text-sm"
+            className="btn-primary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-xs sm:text-sm animate-pulse"
             id="studio-checkout-btn"
           >
             <ShoppingCart className="w-3.5 h-3.5" />

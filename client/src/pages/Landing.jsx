@@ -1,6 +1,13 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+  AnimatePresence,
+} from 'framer-motion';
 import {
   Sparkles, ArrowRight, Palette, ShoppingBag, Share2, Star,
   Zap, Shield, Heart, Users, TrendingUp, CheckCircle2,
@@ -8,6 +15,7 @@ import {
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
+/* ─── Animation Variants ───────────────────────────────────────────────────── */
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
   visible: (i = 0) => ({
@@ -16,6 +24,155 @@ const fadeUp = {
   }),
 };
 
+/* ─── Product Cards Data ────────────────────────────────────────────────────── */
+const PRODUCTS = [
+  { emoji: '👕', name: 'Classic Tee', tag: 'Bestseller', color: '#6366f1', category: 'Clothing' },
+  { emoji: '🧥', name: 'Hoodie', tag: 'Trending', color: '#8b5cf6', category: 'Clothing' },
+  { emoji: '👟', name: 'Sneakers', tag: 'New', color: '#ec4899', category: 'Footwear' },
+  { emoji: '🧢', name: 'Cap', tag: 'Popular', color: '#06b6d4', category: 'Accessories' },
+  { emoji: '🖼️', name: 'Canvas Art', tag: 'Art', color: '#10b981', category: 'Artwork' },
+  { emoji: '🎨', name: 'Wall Decor', tag: 'Creative', color: '#f59e0b', category: 'Artwork' },
+  { emoji: '📱', name: 'Phone Case', tag: 'Hot', color: '#ef4444', category: 'Accessories' },
+  { emoji: '☕', name: 'Coffee Mug', tag: 'Cozy', color: '#84cc16', category: 'Lifestyle' },
+  { emoji: '💻', name: 'Laptop Skin', tag: 'Tech', color: '#3b82f6', category: 'Accessories' },
+  { emoji: '🎒', name: 'Backpack', tag: 'Carry', color: '#a855f7', category: 'Bags' },
+  { emoji: '👜', name: 'Tote Bag', tag: 'Eco', color: '#14b8a6', category: 'Bags' },
+  { emoji: '🖥️', name: 'Poster', tag: 'Print', color: '#f97316', category: 'Artwork' },
+  { emoji: '💍', name: 'Ring', tag: 'Luxury', color: '#e879f9', category: 'Jewelry' },
+  { emoji: '⌚', name: 'Watch', tag: 'Style', color: '#64748b', category: 'Jewelry' },
+  { emoji: '🕶️', name: 'Sunglasses', tag: 'Vibe', color: '#0ea5e9', category: 'Accessories' },
+  { emoji: '📦', name: 'Sticker Pack', tag: 'Fun', color: '#fbbf24', category: 'Stickers' },
+  { emoji: '🧣', name: 'Sweatshirt', tag: 'Warm', color: '#7c3aed', category: 'Clothing' },
+  { emoji: '🪙', name: 'Chain', tag: 'Bold', color: '#d97706', category: 'Jewelry' },
+];
+
+/* ─── Layout positions for 18 floating cards ───────────────────────────────── */
+const CARD_POSITIONS = [
+  // Left column — 6 cards
+  { x: -52, y: -38, depth: 0.7, rotateBase: -8,  size: 'md', delay: 0.0 },
+  { x: -44, y:  -8, depth: 0.5, rotateBase:  6,  size: 'sm', delay: 0.15 },
+  { x: -55, y:  18, depth: 0.9, rotateBase: -4,  size: 'lg', delay: 0.3 },
+  { x: -36, y:  42, depth: 0.6, rotateBase:  9,  size: 'sm', delay: 0.08 },
+  { x: -62, y:  -2, depth: 0.4, rotateBase: -12, size: 'xs', delay: 0.4 },
+  { x: -28, y: -52, depth: 0.8, rotateBase:  5,  size: 'md', delay: 0.22 },
+
+  // Right column — 6 cards
+  { x:  52, y: -38, depth: 0.7, rotateBase:  8,  size: 'md', delay: 0.05 },
+  { x:  44, y:  -8, depth: 0.5, rotateBase: -6,  size: 'sm', delay: 0.2 },
+  { x:  55, y:  18, depth: 0.9, rotateBase:  4,  size: 'lg', delay: 0.35 },
+  { x:  36, y:  42, depth: 0.6, rotateBase: -9,  size: 'sm', delay: 0.12 },
+  { x:  62, y:  -2, depth: 0.4, rotateBase:  12, size: 'xs', delay: 0.45 },
+  { x:  28, y: -52, depth: 0.8, rotateBase: -5,  size: 'md', delay: 0.28 },
+
+  // Top row — 3 cards
+  { x: -20, y: -60, depth: 0.6, rotateBase:  3,  size: 'sm', delay: 0.18 },
+  { x:   0, y: -68, depth: 0.8, rotateBase: -3,  size: 'md', delay: 0.1 },
+  { x:  20, y: -60, depth: 0.6, rotateBase:  6,  size: 'sm', delay: 0.25 },
+
+  // Bottom row — 3 cards
+  { x: -20, y:  62, depth: 0.7, rotateBase: -4,  size: 'sm', delay: 0.32 },
+  { x:   0, y:  70, depth: 0.5, rotateBase:  2,  size: 'md', delay: 0.14 },
+  { x:  20, y:  62, depth: 0.7, rotateBase:  8,  size: 'sm', delay: 0.38 },
+];
+
+const CARD_SIZES = {
+  xs: { card: 'w-24 h-28', emoji: 'text-2xl', name: 'text-[9px]', tag: 'text-[8px]' },
+  sm: { card: 'w-28 h-32', emoji: 'text-3xl', name: 'text-[10px]', tag: 'text-[8px]' },
+  md: { card: 'w-32 h-36', emoji: 'text-4xl', name: 'text-xs', tag: 'text-[9px]' },
+  lg: { card: 'w-36 h-40', emoji: 'text-5xl', name: 'text-xs', tag: 'text-[9px]' },
+};
+
+/* ─── Single Floating Product Card ─────────────────────────────────────────── */
+const FloatingCard = ({ product, position, index, mouseX, mouseY }) => {
+  const { x, y, depth, rotateBase, size, delay } = position;
+  const s = CARD_SIZES[size];
+
+  // Parallax: faster-moving cards have higher depth factor
+  const cardX = useTransform(mouseX, [-1, 1], [-18 * depth, 18 * depth]);
+  const cardY = useTransform(mouseY, [-1, 1], [-12 * depth, 12 * depth]);
+  const springX = useSpring(cardX, { stiffness: 80, damping: 30 });
+  const springY = useSpring(cardY, { stiffness: 80, damping: 30 });
+
+  return (
+    <motion.div
+      className="absolute"
+      style={{
+        left: `calc(50% + ${x}vw)`,
+        top: `calc(50% + ${y}vh)`,
+        x: springX,
+        y: springY,
+        translateX: '-50%',
+        translateY: '-50%',
+      }}
+      initial={{ opacity: 0, scale: 0.3, rotate: rotateBase * 2 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        rotate: rotateBase,
+        y: [0, -12, 0, 8, 0],
+      }}
+      transition={{
+        opacity: { delay: delay + 0.4, duration: 0.7, ease: 'easeOut' },
+        scale:   { delay: delay + 0.4, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] },
+        rotate:  { delay: delay + 0.4, duration: 0.7, ease: 'easeOut' },
+        y: {
+          delay: delay + 1.0,
+          duration: 5 + depth * 3,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        },
+      }}
+      whileHover={{
+        scale: 1.15,
+        rotate: 0,
+        zIndex: 20,
+        transition: { duration: 0.25, ease: 'easeOut' },
+      }}
+    >
+      <div
+        className={`${s.card} rounded-2xl cursor-pointer relative overflow-hidden group select-none`}
+        style={{
+          background: 'linear-gradient(145deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
+          border: `1px solid rgba(255,255,255,0.12)`,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${product.color}22, inset 0 1px 0 rgba(255,255,255,0.08)`,
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        {/* Color accent glow at top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+          style={{ background: product.color, opacity: 0.8 }}
+        />
+
+        {/* Subtle glow behind card */}
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-2xl"
+          style={{ background: `radial-gradient(circle at 50% 30%, ${product.color}, transparent 70%)` }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full gap-1 p-2">
+          <span className={`${s.emoji} leading-none mb-1`}>{product.emoji}</span>
+          <p className={`${s.name} font-bold text-white text-center leading-tight`}>
+            {product.name}
+          </p>
+          <p className="text-[8px] text-dark-500 font-medium tracking-wider uppercase">
+            {product.category}
+          </p>
+          {/* Tag badge */}
+          <span
+            className={`${s.tag} px-1.5 py-0.5 rounded-full font-bold mt-1`}
+            style={{ background: `${product.color}25`, color: product.color, border: `1px solid ${product.color}40` }}
+          >
+            {product.tag}
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ─── Reused sub-components ─────────────────────────────────────────────────── */
 const FeatureCard = ({ icon: Icon, title, description, gradient, delay }) => (
   <motion.div
     className="glass-card p-6 hover:shadow-card-hover transition-all duration-300 group cursor-default"
@@ -31,7 +188,7 @@ const FeatureCard = ({ icon: Icon, title, description, gradient, delay }) => (
   </motion.div>
 );
 
-const TestimonialCard = ({ name, handle, avatar, text, rating }) => (
+const TestimonialCard = ({ name, handle, text, rating }) => (
   <motion.div
     className="glass-card p-6 flex-shrink-0 w-80"
     variants={fadeUp}
@@ -68,33 +225,81 @@ const StatCard = ({ value, label, icon: Icon }) => (
   </motion.div>
 );
 
+/* ─── Animated Headline words ────────────────────────────────────────────────── */
+const HEADLINE_WORDS = ['Anything.', 'Beautifully.', 'Yours.'];
+
+const AnimatedHeadline = () => {
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setWordIndex((i) => (i + 1) % HEADLINE_WORDS.length);
+    }, 2200);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <span className="relative inline-block overflow-hidden h-[1.1em]" style={{ verticalAlign: 'middle' }}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={wordIndex}
+          className="gradient-text inline-block"
+          initial={{ y: '100%', opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: '-100%', opacity: 0 }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+          {HEADLINE_WORDS[wordIndex]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+};
+
+/* ─── Main Landing Component ─────────────────────────────────────────────────── */
 const Landing = () => {
   const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
+  // Scroll parallax
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const heroScale  = useTransform(scrollYProgress, [0, 0.6], [1, 0.92]);
+
+  // Mouse tracking for parallax
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const { innerWidth, innerHeight } = window;
+      mouseX.set((e.clientX / innerWidth) * 2 - 1);
+      mouseY.set((e.clientY / innerHeight) * 2 - 1);
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseX, mouseY]);
+
+  /* ─── Static data ───────────────────────────────────────────────────────── */
   const features = [
-    { icon: Palette, title: 'Professional Design Studio', description: 'Canva-level editor with layers, AI generation, text, shapes, and real-time product preview.', gradient: 'bg-gradient-to-br from-brand-600 to-purple-600', delay: 0 },
-    { icon: ShoppingBag, title: 'Order Custom Products', description: 'Turn your designs into real products. Dynamic pricing based on materials, size, and complexity.', gradient: 'bg-gradient-to-br from-blue-600 to-cyan-600', delay: 1 },
-    { icon: Share2, title: 'Share & Earn Refunds', description: 'Post your purchases publicly. When your design goes viral, get your money back automatically.', gradient: 'bg-gradient-to-br from-emerald-600 to-teal-600', delay: 2 },
-    { icon: Zap, title: 'AI Image Generation', description: 'Generate stunning AI artwork directly in the studio and add it instantly to your canvas.', gradient: 'bg-gradient-to-br from-orange-600 to-yellow-600', delay: 3 },
+    { icon: Palette, title: 'Professional Design Studio', description: 'Canva-level editor with layers, text, shapes, image upload, and real-time product preview.', gradient: 'bg-gradient-to-br from-brand-600 to-purple-600', delay: 0 },
+    { icon: ShoppingBag, title: 'Order Custom Products', description: 'Turn your designs into real products. Transparent pricing based on materials, size, and delivery.', gradient: 'bg-gradient-to-br from-blue-600 to-cyan-600', delay: 1 },
+    { icon: Share2, title: 'Share & Earn Rewards', description: 'Post your purchases to the community. When your design goes viral, earn rewards automatically.', gradient: 'bg-gradient-to-br from-emerald-600 to-teal-600', delay: 2 },
+    { icon: Zap, title: 'Lightning Fast', description: 'Optimized studio with instant previews, autosave, and smooth 60fps animations throughout.', gradient: 'bg-gradient-to-br from-orange-600 to-yellow-600', delay: 3 },
     { icon: Shield, title: 'Secure Payments', description: 'Stripe-powered checkout with bank-grade security. Your financial data is always protected.', gradient: 'bg-gradient-to-br from-red-600 to-pink-600', delay: 4 },
     { icon: Users, title: 'Vibrant Community', description: 'Follow creators, like posts, leave comments, and discover trending designs every day.', gradient: 'bg-gradient-to-br from-violet-600 to-purple-600', delay: 5 },
   ];
 
   const testimonials = [
     { name: 'Sarah Chen', handle: '@sarahcreates', text: 'CustomFlex is insane. I designed a hoodie, shared it, got 500 likes and got my money back in a week. This is the future!', rating: 5 },
-    { name: 'Marcus Rivera', handle: '@marcusart', text: 'The design studio is on par with Figma for product design. AI generation saved me hours of work.', rating: 5 },
-    { name: 'Aisha Patel', handle: '@aishastyle', text: 'I love how my designs can earn me refunds. It gamifies creativity in the most addictive way.', rating: 5 },
+    { name: 'Marcus Rivera', handle: '@marcusart', text: 'The design studio is on par with Figma for product design. The canvas tools saved me hours of work.', rating: 5 },
+    { name: 'Aisha Patel', handle: '@aishastyle', text: 'I love how my designs can earn me rewards. It gamifies creativity in the most addictive way.', rating: 5 },
     { name: 'James Wu', handle: '@jameswu_', text: 'Best custom product platform I\'ve used. The UI is stunning and everything just works smoothly.', rating: 5 },
   ];
 
   const howItWorks = [
     { step: '01', title: 'Design', description: 'Open the studio and create your custom product using our professional editing tools.', icon: Palette },
-    { step: '02', title: 'Order', description: 'Select your product specs, review dynamic pricing, and checkout securely via Stripe.', icon: ShoppingBag },
+    { step: '02', title: 'Order', description: 'Select your product specs, review transparent pricing, and checkout securely via Stripe.', icon: ShoppingBag },
     { step: '03', title: 'Share', description: 'Upload a photo of your product to the community feed and start getting engagement.', icon: Share2 },
-    { step: '04', title: 'Earn', description: 'Once your post hits the engagement threshold, get your full purchase price refunded.', icon: TrendingUp },
+    { step: '04', title: 'Earn', description: 'Once your post hits the engagement threshold, get your full purchase price rewarded.', icon: TrendingUp },
   ];
 
   return (
@@ -102,65 +307,117 @@ const Landing = () => {
       <Navbar />
 
       {/* ─── Hero ────────────────────────────────────────────────────────────── */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-        {/* Animated background orbs */}
-        <motion.div style={{ y, opacity }} className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 animate-float" style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
-          <div className="absolute top-1/3 right-1/4 w-80 h-80 rounded-full opacity-15 animate-float-slow" style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)', animationDelay: '2s' }} />
-          <div className="absolute bottom-1/4 left-1/3 w-64 h-64 rounded-full opacity-10 animate-float" style={{ background: 'radial-gradient(circle, #ec4899, transparent 70%)', animationDelay: '4s' }} />
-          {/* Floating particles */}
-          {Array.from({ length: 20 }).map((_, i) => (
+      <section
+        ref={heroRef}
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        style={{ perspective: '1200px' }}
+      >
+        {/* Scroll-fade + scale wrapper */}
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale }}
+          className="absolute inset-0 pointer-events-none"
+        >
+          {/* Deep background gradient */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.18) 0%, transparent 60%), ' +
+                'radial-gradient(ellipse 60% 50% at 20% 80%, rgba(139,92,246,0.1) 0%, transparent 60%), ' +
+                'radial-gradient(ellipse 40% 40% at 80% 70%, rgba(236,72,153,0.08) 0%, transparent 60%)',
+            }}
+          />
+
+          {/* Noise texture overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            }}
+          />
+
+          {/* Slow rotating gradient ring */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+          >
             <div
-              key={i}
-              className="absolute rounded-full opacity-30"
-              style={{
-                width: Math.random() * 4 + 2,
-                height: Math.random() * 4 + 2,
-                background: ['#6366f1', '#8b5cf6', '#ec4899'][Math.floor(Math.random() * 3)],
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `float ${6 + Math.random() * 8}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 5}s`,
-              }}
+              className="w-[900px] h-[900px] rounded-full border opacity-[0.06]"
+              style={{ borderColor: 'rgba(99,102,241,0.8)', boxShadow: '0 0 120px rgba(99,102,241,0.1) inset' }}
+            />
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+          >
+            <div
+              className="w-[1200px] h-[1200px] rounded-full border opacity-[0.04]"
+              style={{ borderColor: 'rgba(139,92,246,0.6)' }}
+            />
+          </motion.div>
+        </motion.div>
+
+        {/* ── Floating product cards ── */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          {PRODUCTS.map((product, i) => (
+            <FloatingCard
+              key={product.name}
+              product={product}
+              position={CARD_POSITIONS[i]}
+              index={i}
+              mouseX={mouseX}
+              mouseY={mouseY}
             />
           ))}
         </motion.div>
 
-        <div className="section-container relative z-10 text-center py-20">
+        {/* ── Central content ── */}
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-20">
           {/* Badge */}
           <motion.div
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-sm font-medium text-brand-300"
             style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Now with AI-powered design generation</span>
+            <motion.span
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            >
+              <Sparkles className="w-4 h-4" />
+            </motion.span>
+            <span>18+ Customizable Products</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </motion.div>
 
           {/* Headline */}
           <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight mb-6"
-            initial={{ opacity: 0, y: 40 }}
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight mb-4"
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            Design.{' '}
-            <span className="gradient-text">Customize.</span>
-            <br />
-            Share & Earn.
+            Customize{' '}
+            <AnimatedHeadline />
           </motion.h1>
 
-          {/* Sub */}
+          {/* Sub-headline */}
           <motion.p
             className="text-lg md:text-xl text-dark-400 max-w-2xl mx-auto mb-10 leading-relaxed"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
           >
-            The world's most creative marketplace. Design custom artwork, clothing & accessories — then share with the community to earn your money back.
+            The world's most creative marketplace. Design custom clothing, artwork &amp; accessories —
+            then share with the community to earn rewards.
           </motion.p>
 
           {/* CTAs */}
@@ -168,11 +425,11 @@ const Landing = () => {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
+            transition={{ duration: 0.7, delay: 0.4 }}
           >
             <Link to="/choose" id="hero-get-started-btn" className="btn-primary !px-8 !py-4 text-base group">
               <Sparkles className="w-5 h-5" />
-              Get Started Free
+              Start Creating Free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link to="/explore" id="hero-explore-btn" className="btn-secondary !px-8 !py-4 text-base group">
@@ -186,11 +443,15 @@ const Landing = () => {
             className="flex items-center justify-center gap-3 mt-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.7 }}
           >
             <div className="flex -space-x-2">
               {['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981'].map((color, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-dark-950 flex items-center justify-center text-xs font-bold text-white" style={{ background: color }}>
+                <div
+                  key={i}
+                  className="w-8 h-8 rounded-full border-2 border-dark-950 flex items-center justify-center text-xs font-bold text-white"
+                  style={{ background: color }}
+                >
                   {['JL', 'AK', 'MS', 'TW', '+'][i]}
                 </div>
               ))}
@@ -198,6 +459,22 @@ const Landing = () => {
             <p className="text-sm text-dark-400">
               Trusted by <span className="text-white font-semibold">50,000+</span> creators worldwide
             </p>
+          </motion.div>
+
+          {/* Scroll indicator */}
+          <motion.div
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+          >
+            <span className="text-xs text-dark-600 tracking-widest uppercase font-medium">Scroll</span>
+            <motion.div
+              className="w-px h-8 rounded-full"
+              style={{ background: 'linear-gradient(to bottom, rgba(99,102,241,0.6), transparent)' }}
+              animate={{ scaleY: [0.3, 1, 0.3], opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            />
           </motion.div>
         </div>
       </section>
@@ -215,7 +492,7 @@ const Landing = () => {
           >
             <StatCard value="50K+" label="Active Creators" icon={Users} />
             <StatCard value="200K+" label="Designs Created" icon={Palette} />
-            <StatCard value="$2M+" label="Refunds Paid Out" icon={TrendingUp} />
+            <StatCard value="₹2Cr+" label="Rewards Paid Out" icon={TrendingUp} />
             <StatCard value="4.9★" label="Average Rating" icon={Star} />
           </motion.div>
         </div>
@@ -252,6 +529,56 @@ const Landing = () => {
         </motion.div>
       </section>
 
+      {/* ─── Product Showcase Strip ──────────────────────────────────────────── */}
+      <section className="py-16 overflow-hidden border-y border-glass-border relative">
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.05) 0%, transparent 70%)' }} />
+        <div className="section-container mb-10 relative">
+          <motion.div
+            className="text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+          >
+            <span className="tag mb-3">Product Catalog</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white mt-2 mb-2">
+              Customize <span className="gradient-text">18+ products</span>
+            </h2>
+            <p className="text-dark-400 text-base">From clothing to jewelry — if you can imagine it, we can make it.</p>
+          </motion.div>
+        </div>
+
+        {/* Scrolling product strip */}
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, #0a0a0f, transparent)' }} />
+          <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, #0a0a0f, transparent)' }} />
+          <motion.div
+            className="flex gap-4 px-4"
+            animate={{ x: [0, `-${PRODUCTS.length * (160 / 2)}px`] }}
+            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            style={{ width: 'max-content' }}
+          >
+            {[...PRODUCTS, ...PRODUCTS].map((p, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 w-36 h-20 rounded-2xl flex items-center gap-3 px-4"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)',
+                  border: `1px solid ${p.color}30`,
+                  boxShadow: `0 4px 16px rgba(0,0,0,0.2)`,
+                }}
+              >
+                <span className="text-2xl">{p.emoji}</span>
+                <div>
+                  <p className="text-xs font-bold text-white leading-tight">{p.name}</p>
+                  <p className="text-[10px] text-dark-500">{p.category}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* ─── How It Works ────────────────────────────────────────────────────── */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 60%)' }} />
@@ -265,10 +592,10 @@ const Landing = () => {
           >
             <span className="tag mb-4">How It Works</span>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-              Four steps to <span className="gradient-text">earn back</span>
+              Four steps to <span className="gradient-text">earn rewards</span>
             </h2>
             <p className="text-dark-400 text-lg max-w-2xl mx-auto">
-              CustomFlex is the only platform where community engagement can refund your purchase.
+              CustomFlex is the only platform where community engagement rewards your creativity.
             </p>
           </motion.div>
 
@@ -302,7 +629,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ─── Refund Feature Highlight ─────────────────────────────────────────── */}
+      {/* ─── Reward Feature Highlight ─────────────────────────────────────────── */}
       <section className="py-24 section-container">
         <motion.div
           className="glass-card gradient-border p-8 md:p-12 lg:p-16 relative overflow-hidden"
@@ -314,20 +641,20 @@ const Landing = () => {
           <div className="absolute top-0 right-0 w-96 h-96 opacity-10" style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
           <div className="relative grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <span className="tag mb-4">Refund System</span>
+              <span className="tag mb-4">Reward System</span>
               <h2 className="text-4xl font-black text-white mb-4">
                 Your creativity
                 <span className="gradient-text"> pays you back</span>
               </h2>
               <p className="text-dark-400 text-lg leading-relaxed mb-8">
-                CustomFlex's unique refund system rewards viral designs. Share your custom products, grow your audience, and when your post accumulates enough likes — we refund your purchase automatically.
+                CustomFlex's unique reward system celebrates viral designs. Share your custom products, grow your audience, and when your post accumulates enough likes — we reward your purchase automatically.
               </p>
               <ul className="space-y-3">
                 {[
                   'Post goes live → Community discovers it',
-                  'Likes ≥ Product price = Refund eligible',
+                  'Likes reach engagement threshold = Reward eligible',
                   '2+ people purchase same design = Confirmed',
-                  'Admin approves → Stripe refund issued',
+                  'Admin approves → Reward issued instantly',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-dark-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -340,11 +667,11 @@ const Landing = () => {
               </Link>
             </div>
             <div className="space-y-4">
-              {/* Mock refund status card */}
+              {/* Mock reward status card */}
               <div className="glass-card p-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-dark-400">Custom Hoodie Design</span>
-                  <span className="tag">Refund Eligible ✨</span>
+                  <span className="tag">Reward Eligible ✨</span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -359,24 +686,24 @@ const Landing = () => {
                     <span className="text-blue-400 font-semibold">3 / 2 ✓</span>
                   </div>
                   <div className="flex justify-between text-sm font-semibold mt-2">
-                    <span className="text-white">Refund Amount</span>
-                    <span className="gradient-text text-xl">$65.00</span>
+                    <span className="text-white">Reward Amount</span>
+                    <span className="gradient-text text-xl">₹4,250</span>
                   </div>
                 </div>
               </div>
               <div className="glass-card p-5">
-                <div className="text-xs text-dark-500 mb-2">Recent Refund Activity</div>
+                <div className="text-xs text-dark-500 mb-2">Recent Reward Activity</div>
                 {[
-                  { user: 'Sarah M.', amount: '$42.00', time: '2h ago' },
-                  { user: 'James W.', amount: '$89.00', time: '5h ago' },
-                  { user: 'Aisha P.', amount: '$35.00', time: '1d ago' },
+                  { user: 'Sarah M.', amount: '₹2,800', time: '2h ago' },
+                  { user: 'James W.', amount: '₹5,200', time: '5h ago' },
+                  { user: 'Aisha P.', amount: '₹1,950', time: '1d ago' },
                 ].map((r, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-glass-border last:border-0">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
                         {r.user[0]}
                       </div>
-                      <span className="text-xs text-dark-300">{r.user} got refunded</span>
+                      <span className="text-xs text-dark-300">{r.user} got rewarded</span>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold text-emerald-400">{r.amount}</div>

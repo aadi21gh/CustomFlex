@@ -3,20 +3,27 @@ const Design = require('../models/Design');
 const Order = require('../models/Order');
 const Post = require('../models/Post');
 const Refund = require('../models/Refund');
+const RewardConfig = require('../models/RewardConfig');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Notification = require('../models/Notification');
+const { checkRefundEligibility } = require('../utils/refundChecker');
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   STATISTICS
+══════════════════════════════════════════════════════════════════════════════ */
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
 // @access  Admin
 exports.getStats = async (req, res, next) => {
   try {
-    const [userCount, designCount, orderCount, postCount, pendingRefunds] = await Promise.all([
+    const [userCount, designCount, orderCount, postCount, pendingRefunds, rewardConfig] = await Promise.all([
       User.countDocuments({ role: 'user' }),
       Design.countDocuments(),
       Order.countDocuments(),
       Post.countDocuments(),
       Refund.countDocuments({ status: 'pending' }),
+      RewardConfig.getSingleton(),
     ]);
 
     const revenueResult = await Order.aggregate([
@@ -24,6 +31,14 @@ exports.getStats = async (req, res, next) => {
       { $group: { _id: null, total: { $sum: '$pricing.total' } } },
     ]);
     const totalRevenue = revenueResult[0]?.total || 0;
+
+    // Reward stats
+    const rewardResult = await Refund.aggregate([
+      { $match: { status: { $in: ['processed', 'approved'] } } },
+      { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+    ]);
+    const totalRewardsPaid = rewardResult[0]?.total || 0;
+    const totalRewardsCount = rewardResult[0]?.count || 0;
 
     // Orders over last 7 days
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -56,7 +71,11 @@ exports.getStats = async (req, res, next) => {
         postCount,
         pendingRefunds,
         totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        totalRewardsPaid: parseFloat(totalRewardsPaid.toFixed(2)),
+        totalRewardsCount,
+        currency: 'INR',
       },
+      rewardConfig,
       dailyOrders,
       categoryBreakdown,
     });
@@ -64,6 +83,77 @@ exports.getStats = async (req, res, next) => {
     next(error);
   }
 };
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   REWARD CONFIG
+══════════════════════════════════════════════════════════════════════════════ */
+
+// @desc    Get current reward config
+// @route   GET /api/admin/reward-config
+// @access  Admin
+exports.getRewardConfig = async (req, res, next) => {
+  try {
+    const config = await RewardConfig.getSingleton();
+    res.status(200).json({ success: true, config });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update reward config
+// @route   PUT /api/admin/reward-config
+// @access  Admin
+exports.updateRewardConfig = async (req, res, next) => {
+  try {
+    const {
+      likesMode,
+      fixedLikesThreshold,
+      minUniquePurchasers,
+      rewardPercentage,
+      cronSchedule,
+      sendEligibleEmail,
+      sendApprovedEmail,
+      description,
+    } = req.body;
+
+    const config = await RewardConfig.getSingleton();
+
+    if (likesMode !== undefined)            config.likesMode = likesMode;
+    if (fixedLikesThreshold !== undefined)  config.fixedLikesThreshold = fixedLikesThreshold;
+    if (minUniquePurchasers !== undefined)  config.minUniquePurchasers = minUniquePurchasers;
+    if (rewardPercentage !== undefined)     config.rewardPercentage = rewardPercentage;
+    if (cronSchedule !== undefined)         config.cronSchedule = cronSchedule;
+    if (sendEligibleEmail !== undefined)    config.sendEligibleEmail = sendEligibleEmail;
+    if (sendApprovedEmail !== undefined)    config.sendApprovedEmail = sendApprovedEmail;
+    if (description !== undefined)          config.description = description;
+    config.lastModifiedBy = req.user.id;
+
+    await config.save();
+    res.status(200).json({ success: true, config, message: 'Reward configuration updated.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Manually trigger reward eligibility check
+// @route   POST /api/admin/reward-config/run-check
+// @access  Admin
+exports.triggerRewardCheck = async (req, res, next) => {
+  try {
+    const eligibleCount = await checkRefundEligibility();
+    res.status(200).json({
+      success: true,
+      message: `Reward check complete. ${eligibleCount} new eligible order(s) found.`,
+      eligibleCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   USERS
+══════════════════════════════════════════════════════════════════════════════ */
 
 // @desc    Get all users
 // @route   GET /api/admin/users
@@ -109,11 +199,19 @@ exports.toggleUserActive = async (req, res, next) => {
     user.isActive = !user.isActive;
     await user.save();
 
-    res.status(200).json({ success: true, isActive: user.isActive, message: `User ${user.isActive ? 'activated' : 'deactivated'}` });
+    res.status(200).json({
+      success: true,
+      isActive: user.isActive,
+      message: `User ${user.isActive ? 'activated' : 'deactivated'}`,
+    });
   } catch (error) {
     next(error);
   }
 };
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ORDERS
+══════════════════════════════════════════════════════════════════════════════ */
 
 // @desc    Get all orders (admin)
 // @route   GET /api/admin/orders
@@ -123,21 +221,19 @@ exports.getOrders = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    const { status, search } = req.query;
+    const { status } = req.query;
 
     const query = {};
     if (status) query.status = status;
 
-    let orderQuery = Order.find(query)
-      .populate('user', 'name email avatar')
-      .populate('design', 'title category thumbnail')
-      .populate('product', 'name')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
     const [orders, total] = await Promise.all([
-      orderQuery,
+      Order.find(query)
+        .populate('user', 'name email avatar')
+        .populate('design', 'title category thumbnail')
+        .populate('product', 'name emoji')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
       Order.countDocuments(query),
     ]);
 
@@ -169,9 +265,8 @@ exports.updateOrderStatus = async (req, res, next) => {
     }
     await order.save();
 
-    // Notify user
     const messages = {
-      shipped: `Your order ${order.orderNumber} has been shipped! Tracking: ${trackingNumber || 'N/A'}`,
+      shipped: `Your order ${order.orderNumber} has been shipped! 🚚 Tracking: ${trackingNumber || 'N/A'}`,
       delivered: `Your order ${order.orderNumber} has been delivered! 🎉`,
       cancelled: `Your order ${order.orderNumber} has been cancelled.`,
     };
@@ -192,7 +287,11 @@ exports.updateOrderStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Get all refund requests
+/* ══════════════════════════════════════════════════════════════════════════════
+   REWARDS (Refunds)
+══════════════════════════════════════════════════════════════════════════════ */
+
+// @desc    Get all reward requests (admin)
 // @route   GET /api/admin/refunds
 // @access  Admin
 exports.getRefunds = async (req, res, next) => {
@@ -226,7 +325,7 @@ exports.getRefunds = async (req, res, next) => {
   }
 };
 
-// @desc    Process refund
+// @desc    Process reward (approve or reject)
 // @route   PUT /api/admin/refunds/:id/process
 // @access  Admin
 exports.processRefund = async (req, res, next) => {
@@ -236,7 +335,7 @@ exports.processRefund = async (req, res, next) => {
       .populate('order')
       .populate('user', 'name email');
 
-    if (!refund) return res.status(404).json({ success: false, message: 'Refund not found' });
+    if (!refund) return res.status(404).json({ success: false, message: 'Reward request not found' });
 
     refund.status = status === 'approved' ? 'approved' : 'rejected';
     refund.adminNote = adminNote;
@@ -245,10 +344,10 @@ exports.processRefund = async (req, res, next) => {
 
     if (status === 'approved' && refund.order?.stripePaymentIntentId) {
       try {
-        // Issue Stripe refund
+        // Issue Stripe refund (INR — amount in paise)
         const stripeRefund = await stripe.refunds.create({
           payment_intent: refund.order.stripePaymentIntentId,
-          amount: Math.round(refund.amount * 100),
+          amount: Math.round(refund.amount * 100), // paise
         });
         refund.stripeRefundId = stripeRefund.id;
         refund.status = 'processed';
@@ -257,21 +356,21 @@ exports.processRefund = async (req, res, next) => {
         // Update order status
         await Order.findByIdAndUpdate(refund.order._id, { status: 'refunded' });
       } catch (stripeError) {
-        console.error('Stripe refund error:', stripeError.message);
-        // Mark approved but not processed
+        console.error('Stripe reward error:', stripeError.message);
+        // Keep as 'approved' if Stripe fails — admin can retry
         refund.status = 'approved';
       }
     }
 
     await refund.save();
 
-    // Notify user
+    // Notify user (INR currency)
     await Notification.create({
       recipient: refund.user._id,
       type: status === 'approved' ? 'refund_approved' : 'refund_rejected',
       message: status === 'approved'
-        ? `Your refund of $${refund.amount.toFixed(2)} has been approved and processed! 🎉`
-        : `Your refund request has been reviewed. Note: ${adminNote || 'Please contact support.'}`,
+        ? `🎉 Your reward of ₹${refund.amount.toFixed(0)} has been approved and processed!`
+        : `Your reward request has been reviewed. Note: ${adminNote || 'Please contact support.'}`,
       link: '/dashboard/refunds',
       meta: { refundId: refund._id },
     });
@@ -281,6 +380,10 @@ exports.processRefund = async (req, res, next) => {
     next(error);
   }
 };
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   POSTS
+══════════════════════════════════════════════════════════════════════════════ */
 
 // @desc    Get all posts (admin)
 // @route   GET /api/admin/posts

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Package, Truck, CreditCard, ArrowRight,
-  CheckCircle2, Loader2, Info, Cpu, Check, RefreshCw
+  CheckCircle2, Loader2, Info, ChevronDown, ChevronUp,
+  Minus, Plus, Tag, Box, Palette, Star,
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Input from '@/components/ui/Input';
@@ -12,25 +13,290 @@ import api from '@/lib/axios';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-const SHIPPING_METHODS = [
-  { id: 'standard', label: 'Standard Shipping', price: 5.99, days: '5-7 business days' },
-  { id: 'express', label: 'Express Shipping', price: 12.99, days: '2-3 business days' },
-  { id: 'overnight', label: 'Overnight Shipping', price: 24.99, days: 'Next business day' },
+/* ─── Static delivery options (mirrors backend) ─────────────────────────────── */
+const DELIVERY_OPTIONS = [
+  { id: 'standard', label: 'Standard Delivery', price: 99,  days: '7-10 business days', icon: '📦' },
+  { id: 'express',  label: 'Express Delivery',  price: 199, days: '3-5 business days',  icon: '⚡' },
+  { id: 'overnight',label: 'Priority Delivery', price: 349, days: '1-2 business days',  icon: '🚀' },
 ];
 
-const scanSteps = [
-  'Initializing CustomFlex AI Pricing Engine...',
-  'Scanning design canvas vector paths & text layers...',
-  'Analyzing color gamut and ink density coefficients...',
-  'Assessing artist template demand and market value...',
-  'Generating custom optimized price...'
+/* ─── Material options per category (mirrors backend MATERIAL_OPTIONS) ───────── */
+const MATERIALS_BY_CATEGORY = {
+  clothing:    [
+    { id: 'cotton',           label: 'Cotton',           addOn: 0,   description: 'Standard 180 GSM cotton' },
+    { id: 'premium-cotton',   label: 'Premium Cotton',   addOn: 120, description: 'Soft 240 GSM combed cotton' },
+    { id: 'organic-cotton',   label: 'Organic Cotton',   addOn: 200, description: 'GOTS certified organic' },
+    { id: 'oversized-cotton', label: 'Oversized Cotton', addOn: 80,  description: 'Relaxed fit 220 GSM' },
+    { id: 'dry-fit',          label: 'Dry Fit',          addOn: 150, description: 'Moisture-wicking polyester' },
+    { id: 'polyester',        label: 'Polyester',        addOn: 60,  description: 'Durable synthetic blend' },
+  ],
+  artwork: [
+    { id: 'matte-paper',  label: 'Matte Paper',   addOn: 0,   description: 'Standard 250 GSM matte' },
+    { id: 'glossy-paper', label: 'Glossy Paper',  addOn: 50,  description: 'High-gloss 300 GSM' },
+    { id: 'canvas',       label: 'Canvas',        addOn: 300, description: 'Artist-grade stretched canvas' },
+    { id: 'acrylic',      label: 'Acrylic Glass', addOn: 500, description: '4mm shatter-resistant acrylic' },
+    { id: 'wood',         label: 'Wood',          addOn: 400, description: 'Birch wood panel' },
+    { id: 'metal',        label: 'Aluminum',      addOn: 600, description: 'Brushed aluminum sheet' },
+  ],
+  accessories: [
+    { id: 'standard',       label: 'Standard',       addOn: 0,   description: 'Default quality material' },
+    { id: 'premium',        label: 'Premium',        addOn: 200, description: 'Upgraded premium material' },
+    { id: 'silicone',       label: 'Silicone',       addOn: 0,   description: 'Flexible silicone case' },
+    { id: 'hard-plastic',   label: 'Hard Plastic',   addOn: 50,  description: 'Impact-resistant polycarbonate' },
+    { id: 'leather',        label: 'Leather',        addOn: 350, description: 'Genuine leather finish' },
+    { id: 'stainless-steel',label: 'Stainless Steel',addOn: 250, description: 'Brushed 316L stainless' },
+  ],
+};
+
+const DEFAULT_MATERIALS = { clothing: 'cotton', artwork: 'matte-paper', accessories: 'standard' };
+
+const PRINT_AREAS = [
+  { id: 'front',        label: 'Front Only',    charge: 199 },
+  { id: 'back',         label: 'Back Only',     charge: 199 },
+  { id: 'front-back',   label: 'Front + Back',  charge: 349 },
+  { id: 'left-sleeve',  label: 'Left Sleeve',   charge: 249 },
+  { id: 'right-sleeve', label: 'Right Sleeve',  charge: 249 },
+  { id: 'all-over',     label: 'All Over Print',charge: 599 },
+  { id: 'full',         label: 'Full Area',     charge: 399 },
+  { id: 'standard',     label: 'Standard',      charge: 149 },
 ];
 
+/* ─── Price Breakdown Component ─────────────────────────────────────────────── */
+const PriceBreakdown = ({ pricing, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex justify-between items-center">
+            <div className="h-3 rounded-full bg-white/5 animate-pulse" style={{ width: `${40 + i * 10}%` }} />
+            <div className="h-3 w-16 rounded-full bg-white/5 animate-pulse" />
+          </div>
+        ))}
+        <div className="border-t border-glass-border pt-3 mt-3">
+          <div className="h-5 w-28 rounded-full bg-white/5 animate-pulse ml-auto" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!pricing) return (
+    <p className="text-xs text-dark-500 text-center py-4">
+      Select a product and material to see pricing
+    </p>
+  );
+
+  const rows = [
+    {
+      label: 'Base Product',
+      value: formatPrice(pricing.basePrice),
+      icon: <Box className="w-3.5 h-3.5" />,
+      color: 'text-dark-200',
+    },
+    {
+      label: pricing.materialLabel || 'Material',
+      value: pricing.materialPrice > 0 ? `+${formatPrice(pricing.materialPrice)}` : 'Included',
+      icon: <Palette className="w-3.5 h-3.5" />,
+      color: pricing.materialPrice > 0 ? 'text-blue-400' : 'text-dark-400',
+      sub: pricing.materialDescription,
+    },
+    {
+      label: `Design Charge (${pricing.printAreaLabel || 'Standard'})`,
+      value: `+${formatPrice(pricing.designCharge)}`,
+      icon: <Tag className="w-3.5 h-3.5" />,
+      color: 'text-purple-400',
+    },
+    {
+      label: pricing.deliveryLabel || 'Delivery',
+      value: `+${formatPrice(pricing.deliveryCharge)}`,
+      icon: <Truck className="w-3.5 h-3.5" />,
+      color: 'text-cyan-400',
+      sub: pricing.deliveryDays,
+    },
+  ];
+
+  return (
+    <div className="space-y-0">
+      {/* Breakdown rows */}
+      {rows.map(({ label, value, icon, color, sub }, i) => (
+        <motion.div
+          key={label}
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.06 }}
+          className="py-2.5 border-b border-glass-border/60 last:border-0"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-dark-500">{icon}</span>
+              <span className="text-dark-400">{label}</span>
+            </div>
+            <span className={`text-sm font-semibold tabular-nums ${color}`}>{value}</span>
+          </div>
+          {sub && <p className="text-xs text-dark-600 mt-0.5 ml-5">{sub}</p>}
+        </motion.div>
+      ))}
+
+      {/* Quantity multiplier row */}
+      {pricing.quantity > 1 && (
+        <div className="py-2.5 border-b border-glass-border/60">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-dark-400">× {pricing.quantity} items</span>
+            <span className="text-dark-200 font-semibold tabular-nums">
+              {formatPrice(pricing.itemsTotal)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Quantity discount */}
+      {pricing.quantityDiscount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="py-2.5 border-b border-glass-border/60"
+        >
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Star className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="text-emerald-400 font-medium">Bulk Discount</span>
+            </div>
+            <span className="text-emerald-400 font-semibold tabular-nums">
+              −{formatPrice(pricing.quantityDiscount)}
+            </span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Dashed divider */}
+      <div className="my-3 border-t border-dashed border-glass-border" />
+
+      {/* Total */}
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-white text-base">Total</span>
+        <motion.span
+          key={pricing.total}
+          initial={{ scale: 1.1, color: '#818cf8' }}
+          animate={{ scale: 1, color: '#ffffff' }}
+          transition={{ duration: 0.3 }}
+          className="text-2xl font-black gradient-text tabular-nums"
+        >
+          {formatPrice(pricing.total)}
+        </motion.span>
+      </div>
+
+      {/* Tax note */}
+      <p className="text-[10px] text-dark-600 mt-1">All prices inclusive of GST</p>
+    </div>
+  );
+};
+
+/* ─── Material Selector ──────────────────────────────────────────────────────── */
+const MaterialSelector = ({ category, value, onChange }) => {
+  const materials = MATERIALS_BY_CATEGORY[category] || MATERIALS_BY_CATEGORY.accessories;
+  const selected = materials.find((m) => m.id === value) || materials[0];
+
+  return (
+    <div>
+      <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">
+        Material / Fabric
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {materials.map((m) => (
+          <button
+            key={m.id}
+            onClick={() => onChange(m.id)}
+            className={`p-3 rounded-xl text-left transition-all duration-200 border ${
+              value === m.id
+                ? 'border-brand-500/60 bg-brand-500/10'
+                : 'border-glass-border hover:border-white/20 hover:bg-white/5'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-0.5">
+              <p className="text-xs font-semibold text-white">{m.label}</p>
+              {m.addOn > 0 ? (
+                <span className="text-[10px] font-bold text-blue-400">+₹{m.addOn}</span>
+              ) : (
+                <span className="text-[10px] font-medium text-emerald-500">Free</span>
+              )}
+            </div>
+            <p className="text-[10px] text-dark-500 leading-tight">{m.description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Print Area Selector (clothing only) ────────────────────────────────────── */
+const PrintAreaSelector = ({ value, onChange, category }) => {
+  // Only show for clothing; artwork/accessories use 'standard'
+  if (category !== 'clothing') return null;
+  const areas = PRINT_AREAS.filter((a) => a.id !== 'standard');
+
+  return (
+    <div>
+      <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">
+        Print Area
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {areas.map((a) => (
+          <button
+            key={a.id}
+            onClick={() => onChange(a.id)}
+            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
+              value === a.id
+                ? 'border-brand-500 bg-brand-500/20 text-brand-300'
+                : 'border-glass-border text-dark-400 hover:text-white hover:border-white/20'
+            }`}
+          >
+            <span>{a.label}</span>
+            <span className="ml-1 opacity-70">+₹{a.charge}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Quantity Stepper ───────────────────────────────────────────────────────── */
+const QuantityStepper = ({ value, onChange }) => (
+  <div>
+    <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">
+      Quantity
+    </label>
+    <div className="flex items-center gap-3">
+      <button
+        onClick={() => onChange(Math.max(1, value - 1))}
+        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all border border-glass-border hover:border-white/20 hover:bg-white/5 text-dark-300 hover:text-white"
+      >
+        <Minus className="w-3.5 h-3.5" />
+      </button>
+      <span className="w-10 text-center text-white font-bold text-lg tabular-nums">{value}</span>
+      <button
+        onClick={() => onChange(Math.min(100, value + 1))}
+        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all border border-glass-border hover:border-white/20 hover:bg-white/5 text-dark-300 hover:text-white"
+      >
+        <Plus className="w-3.5 h-3.5" />
+      </button>
+      {value >= 3 && (
+        <motion.span
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-xs text-emerald-400 font-semibold"
+        >
+          {value >= 10 ? '15% off!' : value >= 5 ? '10% off!' : '5% off!'}
+        </motion.span>
+      )}
+    </div>
+  </div>
+);
+
+/* ─── Main Checkout Page ─────────────────────────────────────────────────────── */
 const Checkout = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const designId = params.get('designId');
-  const category = params.get('category') || 'artwork';
+  const category = params.get('category') || 'clothing';
 
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -38,98 +304,71 @@ const Checkout = () => {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-
-  const [options, setOptions] = useState({ material: 'standard', printArea: 'front', size: '', color: '', quantity: 1, shippingMethod: 'standard' });
-  const [address, setAddress] = useState({ fullName: '', address: '', city: '', state: '', postalCode: '', country: 'US', phone: '' });
-
   const [design, setDesign] = useState(null);
-  const [isLoadingDesign, setIsLoadingDesign] = useState(false);
-  const [aiScanStatus, setAiScanStatus] = useState('idle'); // 'idle' | 'scanning' | 'completed'
-  const [activeScanStep, setActiveScanStep] = useState(0);
 
-  // Load design details
+  const [options, setOptions] = useState({
+    material: DEFAULT_MATERIALS[category] || 'standard',
+    printArea: category === 'clothing' ? 'front' : 'standard',
+    size: '',
+    color: '',
+    quantity: 1,
+    deliveryMethod: 'standard',
+  });
+
+  const [address, setAddress] = useState({
+    fullName: '', address: '', city: '', state: '',
+    postalCode: '', country: 'IN', phone: '',
+  });
+
+  // Load design
   useEffect(() => {
     if (!designId) return;
-    const loadDesign = async () => {
-      setIsLoadingDesign(true);
-      try {
-        const { data } = await api.get(`/designs/${designId}`);
-        setDesign(data.design);
-      } catch (err) {
-        toast.error('Failed to load design details');
-      } finally {
-        setIsLoadingDesign(false);
-      }
-    };
-    loadDesign();
+    api.get(`/designs/${designId}`)
+      .then(({ data }) => setDesign(data.design))
+      .catch(() => toast.error('Failed to load design details'));
   }, [designId]);
 
-  // Simulate scanning when design is first loaded
+  // Load products by category
   useEffect(() => {
-    if (!design) return;
-    
-    setAiScanStatus('scanning');
-    setActiveScanStep(0);
-    
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      currentStep++;
-      if (currentStep < scanSteps.length) {
-        setActiveScanStep(currentStep);
-      } else {
-        clearInterval(interval);
-        setAiScanStatus('completed');
-      }
-    }, 450);
-    
-    return () => clearInterval(interval);
-  }, [design]);
-
-  // Load products for category
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const { data } = await api.get(`/products?category=${category}`);
+    api.get(`/products?category=${category}`)
+      .then(({ data }) => {
         setProducts(data.products);
         if (data.products.length > 0) setSelectedProduct(data.products[0]);
-      } catch {
-        toast.error('Failed to load products');
-      } finally {
-        setIsLoadingProducts(false);
-      }
-    };
-    load();
+      })
+      .catch(() => toast.error('Failed to load products'))
+      .finally(() => setIsLoadingProducts(false));
   }, [category]);
 
-  // Calculate price whenever options change
-  useEffect(() => {
+  // Recalculate price whenever options or product changes
+  const recalculate = useCallback(async () => {
     if (!selectedProduct) return;
-    const calculate = async () => {
-      setIsCalculating(true);
-      try {
-        const { data } = await api.post('/orders/calculate-price', {
-          category,
-          subcategory: selectedProduct.subcategory,
-          material: options.material,
-          printArea: options.printArea,
-          quantity: options.quantity,
-          shippingMethod: options.shippingMethod,
-          designId,
-        });
-        setPricing(data.pricing);
-      } catch {
-        toast.error('Failed to calculate price');
-      } finally {
-        setIsCalculating(false);
-      }
-    };
-    const timer = setTimeout(calculate, 300);
+    setIsCalculating(true);
+    try {
+      const { data } = await api.post('/orders/calculate-price', {
+        category,
+        subcategory: selectedProduct.subcategory,
+        material: options.material,
+        printArea: options.printArea,
+        quantity: options.quantity,
+        deliveryMethod: options.deliveryMethod,
+        productId: selectedProduct._id,
+      });
+      setPricing(data.pricing);
+    } catch {
+      toast.error('Failed to calculate price');
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [options, selectedProduct, category]);
+
+  useEffect(() => {
+    const timer = setTimeout(recalculate, 250);
     return () => clearTimeout(timer);
-  }, [options, selectedProduct, designId]);
+  }, [recalculate]);
 
   const handleCheckout = async () => {
-    if (!designId) { toast.error('No design selected'); return; }
-    if (!selectedProduct) { toast.error('Please select a product'); return; }
+    if (!designId)         { toast.error('No design selected'); return; }
+    if (!selectedProduct)  { toast.error('Please select a product'); return; }
     if (!address.fullName || !address.address || !address.city || !address.postalCode) {
       toast.error('Please fill in all required address fields'); return;
     }
@@ -137,16 +376,17 @@ const Checkout = () => {
     setIsCheckingOut(true);
     try {
       const { data } = await api.post('/orders/create-checkout-session', {
-        designId, productId: selectedProduct._id,
-        quantity: options.quantity, material: options.material,
-        printArea: options.printArea, size: options.size, color: options.color,
-        shippingMethod: options.shippingMethod, shippingAddress: address,
+        designId,
+        productId: selectedProduct._id,
+        quantity: options.quantity,
+        material: options.material,
+        printArea: options.printArea,
+        size: options.size,
+        color: options.color,
+        deliveryMethod: options.deliveryMethod,
+        shippingAddress: address,
       });
-
-      // Redirect to Stripe checkout
-      if (data.sessionUrl) {
-        window.location.href = data.sessionUrl;
-      }
+      if (data.sessionUrl) window.location.href = data.sessionUrl;
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Checkout failed');
     } finally {
@@ -158,360 +398,258 @@ const Checkout = () => {
     <div className="min-h-screen mesh-bg">
       <Navbar />
       <div className="section-container pt-24 pb-16">
-        <motion.div className="mb-8" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
-            <ShoppingCart className="w-8 h-8 text-brand-400" />
-            Checkout
-          </h1>
-          <p className="text-dark-400">Complete your order and we'll get it made for you</p>
+
+        {/* Page title */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3 mb-1">
+            <ShoppingCart className="w-7 h-7 text-brand-400" />
+            <h1 className="text-3xl font-black text-white">Checkout</h1>
+          </div>
+          <p className="text-dark-400 ml-10">Review your options and complete your custom order</p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-[1fr_380px] gap-8">
-          {/* Left — Options */}
+        <div className="grid lg:grid-cols-[1fr_400px] gap-8">
+
+          {/* ── Left: Configuration ── */}
           <div className="space-y-6">
-            {/* AI Pricing scan widget */}
+
+            {/* Design preview card */}
             {design && (
-              <div className="glass-card p-6 mb-6 overflow-hidden relative border border-brand-500/20 shadow-[0_8px_32px_rgba(99,102,241,0.1)]">
-                {/* Visual scan animation stylesheet */}
-                <style dangerouslySetInnerHTML={{ __html: `
-                  @keyframes scan-animation {
-                    0% { top: 0%; opacity: 0.3; }
-                    50% { top: 100%; opacity: 1; filter: drop-shadow(0 0 8px rgba(99,102,241,0.8)); }
-                    100% { top: 0%; opacity: 0.3; }
-                  }
-                  .animate-scan {
-                    position: absolute;
-                    left: 0;
-                    right: 0;
-                    height: 2px;
-                    background: linear-gradient(90deg, transparent, #8b5cf6, #6366f1, #8b5cf6, transparent);
-                    box-shadow: 0 0 10px #6366f1, 0 0 20px #8b5cf6;
-                    animation: scan-animation 2.2s ease-in-out infinite;
-                  }
-                `}} />
-
-                <div className="flex flex-col md:flex-row gap-6 items-start">
-                  {/* Thumbnail / Scanning effect */}
-                  <div className="w-full md:w-44 flex-shrink-0 flex justify-center">
-                    <div className="relative w-40 h-40 rounded-xl overflow-hidden border border-glass-border bg-dark-900 flex items-center justify-center group shadow-inner">
-                      {design.thumbnail?.url ? (
-                        <img src={design.thumbnail.url} alt={design.title} className="w-full h-full object-contain" />
-                      ) : (
-                        <Cpu className="w-12 h-12 text-dark-500" />
-                      )}
-                      
-                      {/* Laser overlay */}
-                      {aiScanStatus === 'scanning' && (
-                        <>
-                          <div className="absolute inset-0 bg-brand-500/5 backdrop-blur-[0.5px]" />
-                          <div className="animate-scan" />
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* AI Analysis and Status */}
-                  <div className="flex-1 space-y-4 w-full">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div>
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                          <Cpu className="w-5 h-5 text-brand-400 animate-pulse" />
-                          CustomFlex AI Pricing Engine
-                        </h2>
-                        <p className="text-xs text-dark-400 mt-0.5">Predicting dynamic manufacturing & design value</p>
-                      </div>
-                      
-                      {aiScanStatus === 'scanning' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20 animate-pulse">
-                          <Loader2 className="w-3 h-3 animate-spin" /> Scanning Design...
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <CheckCircle2 className="w-3 h-3" /> AI Scan Complete
-                        </span>
-                      )}
-                    </div>
-
-                    {aiScanStatus === 'scanning' ? (
-                      <div className="space-y-3 py-2">
-                        {/* Scanning Step Progress */}
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-xs text-dark-300">
-                            <span>Scan Progress</span>
-                            <span>{Math.round(((activeScanStep + 1) / scanSteps.length) * 100)}%</span>
-                          </div>
-                          <div className="w-full bg-dark-800 rounded-full h-1.5 overflow-hidden">
-                            <div 
-                              className="bg-brand-500 h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${((activeScanStep + 1) / scanSteps.length) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                        <p className="text-sm font-medium text-brand-300 italic animate-pulse">
-                          {scanSteps[activeScanStep]}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {isCalculating ? (
-                          <div className="flex flex-col items-center justify-center py-8">
-                            <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
-                            <span className="text-sm text-dark-400 mt-2">Computing dynamic pricing...</span>
-                          </div>
-                        ) : pricing ? (
-                          <>
-                            {/* AI Estimated Price */}
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 shadow-lg shadow-brand-500/5">
-                              <div className="flex-1">
-                                <span className="text-[10px] uppercase font-bold text-brand-300 block">AI Predicted Base Price</span>
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-2xl font-black text-white">{formatPrice(pricing.basePrice)}</span>
-                                  {pricing.aiAnalysis?.originalBasePrice !== pricing.basePrice && (
-                                    <span className="text-xs line-through text-dark-500 font-normal">
-                                      {formatPrice(pricing.aiAnalysis.originalBasePrice)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-[10px] uppercase font-bold text-emerald-400 block">AI Confidence</span>
-                                <span className="text-sm font-bold text-white">98%</span>
-                              </div>
-                            </div>
-
-                            {/* Stats / Metrics */}
-                            {pricing.aiAnalysis && (
-                              <div className="grid grid-cols-3 gap-3">
-                                {[
-                                  { label: 'Complexity', score: pricing.aiAnalysis.complexityScore, color: 'from-blue-500 to-indigo-500' },
-                                  { label: 'Ink Density', score: pricing.aiAnalysis.inkDensityScore, color: 'from-purple-500 to-pink-500' },
-                                  { label: 'Mfg Load', score: pricing.aiAnalysis.manufacturingLoadScore, color: 'from-emerald-500 to-teal-500' },
-                                ].map((stat) => (
-                                  <div key={stat.label} className="bg-dark-900/50 border border-glass-border p-2.5 rounded-xl text-center">
-                                    <span className="text-[10px] uppercase font-bold text-dark-400 block mb-1">{stat.label}</span>
-                                    <span className="text-base font-black text-white">{stat.score}%</span>
-                                    <div className="w-full bg-dark-800 h-1 rounded-full overflow-hidden mt-1.5">
-                                      <div className={`h-1 bg-gradient-to-r ${stat.color} rounded-full`} style={{ width: `${stat.score}%` }} />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Insights checklist */}
-                            {pricing.aiAnalysis?.insights?.length > 0 && (
-                              <div className="bg-dark-900/40 border border-glass-border rounded-xl p-3 space-y-2">
-                                <span className="text-xs font-semibold text-white block mb-1">AI Valuation Insights:</span>
-                                {pricing.aiAnalysis.insights.map((insight, idx) => {
-                                  const isDiscount = insight.includes('-') || insight.toLowerCase().includes('discount');
-                                  const isFee = insight.includes('+') || insight.toLowerCase().includes('fee');
-                                  return (
-                                    <div key={idx} className="flex items-start gap-2 text-xs">
-                                      <Check className={`w-3.5 h-3.5 mt-0.5 ${isDiscount ? 'text-emerald-400' : isFee ? 'text-brand-400' : 'text-dark-400'}`} />
-                                      <span className={isDiscount ? 'text-emerald-300 font-medium' : isFee ? 'text-brand-300' : 'text-dark-300'}>
-                                        {insight}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-xs text-dark-500 text-center py-6">
-                            No product options selected. Select a product to view AI insights.
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between pt-2 border-t border-glass-border text-xs">
-                          <span className="text-dark-400">Predicted for: <strong className="text-white font-medium">{design.title}</strong></span>
-                          <button 
-                            onClick={() => {
-                              setAiScanStatus('scanning');
-                              setActiveScanStep(0);
-                              let currentStep = 0;
-                              const interval = setInterval(() => {
-                                currentStep++;
-                                if (currentStep < scanSteps.length) {
-                                  setActiveScanStep(currentStep);
-                                } else {
-                                  clearInterval(interval);
-                                  setAiScanStatus('completed');
-                                }
-                              }, 300);
-                            }}
-                            className="text-brand-400 hover:text-brand-300 flex items-center gap-1 font-semibold transition-colors"
-                          >
-                            <RefreshCw className="w-3 h-3" /> Re-scan Design
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <motion.div
+                className="glass-card p-5 flex items-center gap-5"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="w-20 h-20 rounded-xl overflow-hidden border border-glass-border bg-dark-900 flex-shrink-0 flex items-center justify-center">
+                  {design.thumbnail?.url ? (
+                    <img src={design.thumbnail.url} alt={design.title} className="w-full h-full object-contain" />
+                  ) : (
+                    <Palette className="w-8 h-8 text-dark-500" />
+                  )}
                 </div>
-              </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider mb-1">Your Design</p>
+                  <h3 className="text-white font-bold text-lg truncate">{design.title}</h3>
+                  <p className="text-dark-400 text-sm capitalize">{category} • Custom Print</p>
+                </div>
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              </motion.div>
             )}
 
-            {/* Product selection */}
-            <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-brand-400" /> Select Product
+            {/* Product Selection */}
+            <motion.div
+              className="glass-card p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                <Package className="w-4 h-4 text-brand-400" />
+                Select Product
               </h2>
               {isLoadingProducts ? (
-                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-brand-500 animate-spin" /></div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-20 rounded-xl bg-white/5 animate-pulse" />
+                  ))}
+                </div>
+              ) : products.length === 0 ? (
+                <p className="text-dark-500 text-sm text-center py-6">No products found for this category</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {products.map((p) => (
                     <button
                       key={p._id}
                       onClick={() => setSelectedProduct(p)}
-                      className={`p-4 rounded-xl border text-left transition-all ${selectedProduct?._id === p._id ? 'border-brand-500/60 bg-brand-500/10' : 'border-glass-border hover:border-white/20 hover:bg-white/5'}`}
+                      className={`p-4 rounded-xl border text-left transition-all duration-200 ${
+                        selectedProduct?._id === p._id
+                          ? 'border-brand-500/60 bg-brand-500/10'
+                          : 'border-glass-border hover:border-white/20 hover:bg-white/5'
+                      }`}
                     >
-                      <p className="text-sm font-semibold text-white">{p.name}</p>
-                      <p className="text-xs text-dark-400 capitalize">{p.subcategory}</p>
-                      <p className="text-sm font-bold text-brand-400 mt-1">${p.basePrice}</p>
+                      <p className="text-lg mb-1">{p.emoji || '🎁'}</p>
+                      <p className="text-sm font-semibold text-white leading-tight">{p.name}</p>
+                      <p className="text-xs text-dark-400 capitalize mt-0.5">{p.subcategory}</p>
+                      <p className="text-sm font-bold text-brand-400 mt-1.5">from {formatPrice(p.basePrice)}</p>
                     </button>
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
 
-            {/* Options */}
-            <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Customization Options</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-dark-300 block mb-2">Material</label>
-                  <select value={options.material} onChange={(e) => setOptions((o) => ({ ...o, material: e.target.value }))} className="input-field text-sm">
-                    {['standard', 'premium', 'luxury', 'organic', 'recycled'].map((m) => <option key={m} value={m} className="bg-dark-900 capitalize">{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-dark-300 block mb-2">Print Area</label>
-                  <select value={options.printArea} onChange={(e) => setOptions((o) => ({ ...o, printArea: e.target.value }))} className="input-field text-sm">
-                    {['front', 'back', 'front-back', 'all-over', 'full'].map((p) => <option key={p} value={p} className="bg-dark-900">{p.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-dark-300 block mb-2">Quantity</label>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setOptions((o) => ({ ...o, quantity: Math.max(1, o.quantity - 1) }))} className="toolbar-btn !w-8 !h-8">-</button>
-                    <input type="number" min={1} max={100} value={options.quantity} onChange={(e) => setOptions((o) => ({ ...o, quantity: Math.max(1, parseInt(e.target.value) || 1) }))} className="input-field text-center !py-2 w-16 text-sm" />
-                    <button onClick={() => setOptions((o) => ({ ...o, quantity: Math.min(100, o.quantity + 1) }))} className="toolbar-btn !w-8 !h-8">+</button>
-                  </div>
-                </div>
-                {selectedProduct?.sizes?.length > 0 && (
-                  <div>
-                    <label className="text-xs font-medium text-dark-300 block mb-2">Size</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedProduct.sizes.map((s) => (
-                        <button key={s} onClick={() => setOptions((o) => ({ ...o, size: s }))}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${options.size === s ? 'border-brand-500 bg-brand-500/20 text-brand-300' : 'border-glass-border text-dark-400 hover:text-white'}`}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Shipping */}
-            <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Truck className="w-5 h-5 text-brand-400" /> Shipping Method
+            {/* Material & Print Area */}
+            <motion.div
+              className="glass-card p-6 space-y-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Palette className="w-4 h-4 text-brand-400" />
+                Customization Options
               </h2>
-              <div className="space-y-3 mb-6">
-                {SHIPPING_METHODS.map((method) => (
-                  <label key={method.id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${options.shippingMethod === method.id ? 'border-brand-500/60 bg-brand-500/10' : 'border-glass-border hover:border-white/20'}`}>
-                    <input type="radio" name="shipping" value={method.id} checked={options.shippingMethod === method.id} onChange={() => setOptions((o) => ({ ...o, shippingMethod: method.id }))} className="accent-brand-500" />
+
+              <MaterialSelector
+                category={category}
+                value={options.material}
+                onChange={(v) => setOptions((o) => ({ ...o, material: v }))}
+              />
+
+              <PrintAreaSelector
+                category={category}
+                value={options.printArea}
+                onChange={(v) => setOptions((o) => ({ ...o, printArea: v }))}
+              />
+
+              {/* Size picker */}
+              {selectedProduct?.sizes?.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">Size</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.sizes.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setOptions((o) => ({ ...o, size: s }))}
+                        className={`px-3.5 py-1.5 rounded-lg text-sm font-bold border transition-all ${
+                          options.size === s
+                            ? 'border-brand-500 bg-brand-500/20 text-brand-300'
+                            : 'border-glass-border text-dark-400 hover:text-white hover:border-white/20'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <QuantityStepper
+                value={options.quantity}
+                onChange={(v) => setOptions((o) => ({ ...o, quantity: v }))}
+              />
+            </motion.div>
+
+            {/* Delivery Method */}
+            <motion.div
+              className="glass-card p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-brand-400" />
+                Delivery Method
+              </h2>
+              <div className="space-y-2.5">
+                {DELIVERY_OPTIONS.map((d) => (
+                  <label
+                    key={d.id}
+                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                      options.deliveryMethod === d.id
+                        ? 'border-brand-500/60 bg-brand-500/10'
+                        : 'border-glass-border hover:border-white/20 hover:bg-white/5'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="delivery"
+                      value={d.id}
+                      checked={options.deliveryMethod === d.id}
+                      onChange={() => setOptions((o) => ({ ...o, deliveryMethod: d.id }))}
+                      className="accent-brand-500"
+                    />
+                    <span className="text-xl">{d.icon}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">{method.label}</p>
-                      <p className="text-xs text-dark-400">{method.days}</p>
+                      <p className="text-sm font-semibold text-white">{d.label}</p>
+                      <p className="text-xs text-dark-400">{d.days}</p>
                     </div>
-                    <span className="text-sm font-bold text-brand-400">${method.price.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-brand-400">+{formatPrice(d.price)}</span>
                   </label>
                 ))}
               </div>
+            </motion.div>
 
-              {/* Address */}
-              <h3 className="text-sm font-semibold text-white mb-4">Shipping Address</h3>
+            {/* Shipping Address */}
+            <motion.div
+              className="glass-card p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h2 className="text-base font-bold text-white mb-5 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-brand-400" />
+                Shipping Address
+              </h2>
               <div className="grid grid-cols-2 gap-4">
-                <Input id="checkout-name" label="Full Name" placeholder="John Doe" value={address.fullName} onChange={(e) => setAddress((a) => ({ ...a, fullName: e.target.value }))} required className="col-span-2" />
-                <Input id="checkout-address" label="Street Address" placeholder="123 Main St" value={address.address} onChange={(e) => setAddress((a) => ({ ...a, address: e.target.value }))} required className="col-span-2" />
-                <Input id="checkout-city" label="City" placeholder="New York" value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} required />
-                <Input id="checkout-state" label="State" placeholder="NY" value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} />
-                <Input id="checkout-zip" label="ZIP Code" placeholder="10001" value={address.postalCode} onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))} required />
-                <Input id="checkout-phone" label="Phone" placeholder="+1 234 567 8900" value={address.phone} onChange={(e) => setAddress((a) => ({ ...a, phone: e.target.value }))} />
+                <Input id="checkout-name"    label="Full Name *"      placeholder="Rahul Kumar"      value={address.fullName}   onChange={(e) => setAddress((a) => ({ ...a, fullName: e.target.value }))}   required className="col-span-2" />
+                <Input id="checkout-address" label="Street Address *" placeholder="123, MG Road"     value={address.address}    onChange={(e) => setAddress((a) => ({ ...a, address: e.target.value }))}    required className="col-span-2" />
+                <Input id="checkout-city"    label="City *"           placeholder="Bengaluru"        value={address.city}       onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}       required />
+                <Input id="checkout-state"   label="State"            placeholder="Karnataka"        value={address.state}      onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} />
+                <Input id="checkout-zip"     label="PIN Code *"       placeholder="560001"           value={address.postalCode} onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))} required />
+                <Input id="checkout-phone"   label="Phone"            placeholder="+91 98765 43210"  value={address.phone}      onChange={(e) => setAddress((a) => ({ ...a, phone: e.target.value }))} />
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right — Order Summary */}
-          <div className="space-y-4 sticky top-24 self-start">
-            <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-brand-400" /> Order Summary
+          {/* ── Right: Order Summary (sticky) ── */}
+          <div className="space-y-4 lg:sticky lg:top-24 self-start">
+            <motion.div
+              className="glass-card p-6"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2 className="text-base font-bold text-white mb-5 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-brand-400" />
+                Price Breakdown
               </h2>
 
+              {/* Product summary chip */}
               {selectedProduct && (
-                <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <p className="text-sm font-semibold text-white">{selectedProduct.name}</p>
-                  <p className="text-xs text-dark-400 capitalize">{category} · {options.material} · {options.printArea.replace(/-/g, ' ')}</p>
-                </div>
-              )}
-
-              {isCalculating ? (
-                <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 text-brand-500 animate-spin" /></div>
-              ) : pricing && (
-                <div className="space-y-2.5">
-                  {[
-                    {
-                      label: 'Base Price',
-                      value: pricing.aiAnalysis?.aiPricePredictionApplied && pricing.aiAnalysis?.originalBasePrice !== pricing.basePrice ? (
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <span className="line-through text-dark-500 font-normal text-xs">{formatPrice(pricing.aiAnalysis.originalBasePrice)}</span>
-                          <span className="text-emerald-400 font-bold">{formatPrice(pricing.basePrice)}</span>
-                        </div>
-                      ) : (
-                        formatPrice(pricing.basePrice)
-                      )
-                    },
-                    { label: `Quantity (×${pricing.quantity})`, value: formatPrice(pricing.subtotal) },
-                    pricing.quantityDiscount > 0 && { label: 'Quantity Discount', value: `-${formatPrice(pricing.quantityDiscount)}`, green: true },
-                    pricing.aiComplexityFee > 0 && { label: 'AI Complexity Fee', value: formatPrice(pricing.aiComplexityFee) },
-                    { label: 'Shipping', value: formatPrice(pricing.shipping) },
-                    { label: 'Tax (8%)', value: formatPrice(pricing.tax) },
-                  ].filter(Boolean).map(({ label, value, green }) => (
-                    <div key={label} className="flex justify-between text-sm">
-                      <span className="text-dark-400">{label}</span>
-                      <span className={green ? 'text-emerald-400 font-medium' : 'text-dark-200'}>{value}</span>
-                    </div>
-                  ))}
-                  <div className="border-t border-glass-border pt-3 mt-3 flex justify-between">
-                    <span className="font-bold text-white">Total</span>
-                    <span className="text-xl font-black gradient-text">{formatPrice(pricing.total)}</span>
+                <div
+                  className="flex items-center gap-3 p-3 rounded-xl mb-5"
+                  style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}
+                >
+                  <span className="text-2xl">{selectedProduct.emoji || '🎁'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{selectedProduct.name}</p>
+                    <p className="text-xs text-dark-400 capitalize truncate">
+                      {category} · {options.material?.replace(/-/g, ' ')} · ×{options.quantity}
+                    </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-start gap-2 mt-4 p-3 rounded-xl" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
-                <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-dark-400">
-                  Share your product post after purchase. If it gets enough engagement, you could earn a full refund!
+              {/* THE PRICE BREAKDOWN */}
+              <PriceBreakdown pricing={pricing} isLoading={isCalculating} />
+
+              {/* Reward info nudge */}
+              <div
+                className="flex items-start gap-2 mt-5 p-3 rounded-xl"
+                style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}
+              >
+                <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-dark-400 leading-relaxed">
+                  Share your product photo after delivery. When enough people like it, you could earn a reward worth your purchase price! 🎉
                 </p>
               </div>
 
+              {/* Checkout button */}
               <Button
                 onClick={handleCheckout}
                 disabled={!pricing || isCheckingOut || !selectedProduct}
                 isLoading={isCheckingOut}
                 variant="primary"
-                className="w-full mt-6 !py-4"
+                className="w-full mt-5 !py-4"
                 id="checkout-pay-btn"
               >
                 <CreditCard className="w-5 h-5" />
-                Pay with Stripe
+                {isCheckingOut ? 'Redirecting…' : `Pay ${pricing ? formatPrice(pricing.total) : '…'}`}
                 <ArrowRight className="w-4 h-4" />
               </Button>
 
@@ -519,7 +657,28 @@ const Checkout = () => {
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 Secured by Stripe · SSL encrypted
               </div>
-            </div>
+            </motion.div>
+
+            {/* What's included box */}
+            <motion.div
+              className="glass-card p-5"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <p className="text-xs font-semibold text-white mb-3 uppercase tracking-wider">What's included</p>
+              {[
+                'Professional print on premium material',
+                'Custom design applied to your specs',
+                'Packaged & shipped to your door',
+                'Eligible for community reward program',
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2 py-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  <span className="text-xs text-dark-400">{item}</span>
+                </div>
+              ))}
+            </motion.div>
           </div>
         </div>
       </div>

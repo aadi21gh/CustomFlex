@@ -3,6 +3,8 @@ const Design = require('../models/Design');
 const Order = require('../models/Order');
 const Post = require('../models/Post');
 const Notification = require('../models/Notification');
+const Refund = require('../models/Refund');
+const RewardConfig = require('../models/RewardConfig');
 const cloudinary = require('../config/cloudinary');
 
 // @desc    Get user profile
@@ -252,23 +254,86 @@ exports.markNotificationsRead = async (req, res, next) => {
 // @access  Private
 exports.getDashboardStats = async (req, res, next) => {
   try {
-    const [orderCount, designCount, postCount, totalSpent] = await Promise.all([
-      Order.countDocuments({ user: req.user.id }),
-      Design.countDocuments({ user: req.user.id }),
-      Post.countDocuments({ user: req.user.id }),
+    const userId = req.user.id;
+
+    const [orderCount, designCount, postCount, totalSpent, totalEarned, pendingRewards, rewardConfig] = await Promise.all([
+      Order.countDocuments({ user: userId }),
+      Design.countDocuments({ user: userId }),
+      Post.countDocuments({ user: userId }),
       Order.aggregate([
         { $match: { user: req.user._id, isPaid: true } },
         { $group: { _id: null, total: { $sum: '$pricing.total' } } },
       ]),
+      Refund.aggregate([
+        { $match: { user: req.user._id, status: { $in: ['approved', 'processed'] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      Refund.aggregate([
+        { $match: { user: req.user._id, status: { $in: ['pending', 'under_review'] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      RewardConfig.getSingleton()
     ]);
 
     const spent = totalSpent[0]?.total || 0;
+    const earned = totalEarned[0]?.total || 0;
+    const pendingAmount = pendingRewards[0]?.total || 0;
 
-    const recentOrders = await Order.find({ user: req.user.id })
+    const recentOrders = await Order.find({ user: userId })
       .populate('design', 'title thumbnail category')
-      .populate('product', 'name')
+      .populate('product', 'name emoji')
       .sort({ createdAt: -1 })
       .limit(5);
+
+    // Dynamic reward eligibility tracker for the user's latest paid, non-eligible order
+    let refundProgress = null;
+    const latestActiveOrder = await Order.findOne({
+      user: userId,
+      isPaid: true,
+      refundEligible: false,
+      status: { $in: ['paid', 'processing', 'shipped', 'delivered'] }
+    }).populate('design', 'title');
+
+    if (latestActiveOrder) {
+      const post = await Post.findOne({ order: latestActiveOrder._id, isPublic: true });
+      if (post) {
+        const requiredLikes = rewardConfig.likesMode === 'auto'
+          ? Math.ceil(latestActiveOrder.pricing.total)
+          : rewardConfig.fixedLikesThreshold;
+
+        const otherPurchasers = await Order.distinct('user', {
+          design: latestActiveOrder.design,
+          isPaid: true,
+          _id: { $ne: latestActiveOrder._id }
+        });
+
+        const currentBuyers = otherPurchasers.length + 1; // +1 for self
+        const requiredBuyers = rewardConfig.minUniquePurchasers;
+
+        const likesMet = post.likesCount >= requiredLikes;
+        const buyersMet = currentBuyers >= requiredBuyers;
+
+        let message = '';
+        if (!likesMet && !buyersMet) {
+          message = `Need ${requiredLikes - post.likesCount} more likes and ${requiredBuyers - currentBuyers} more purchase(s) of this design.`;
+        } else if (!likesMet) {
+          message = `Purchasers requirement met! Need ${requiredLikes - post.likesCount} more likes.`;
+        } else if (!buyersMet) {
+          message = `Likes requirement met! Need ${requiredBuyers - currentBuyers} more purchase(s) by others.`;
+        } else {
+          message = 'Thresholds met! Eligibility will be processed in the next checker cycle.';
+        }
+
+        refundProgress = {
+          designTitle: latestActiveOrder.design?.title || 'Custom Design',
+          likesCount: post.likesCount,
+          likeThreshold: requiredLikes,
+          uniquePurchasers: currentBuyers,
+          requiredPurchasers: requiredBuyers,
+          message
+        };
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -277,8 +342,11 @@ exports.getDashboardStats = async (req, res, next) => {
         designCount,
         postCount,
         totalSpent: parseFloat(spent.toFixed(2)),
+        totalRefunded: parseFloat(earned.toFixed(2)),
+        pendingRewards: parseFloat(pendingAmount.toFixed(2))
       },
       recentOrders,
+      refundProgress
     });
   } catch (error) {
     next(error);

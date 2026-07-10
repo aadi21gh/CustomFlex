@@ -1,272 +1,236 @@
 /**
- * Dynamic price calculator for CustomFlex products
- * Formula: (basePrice × materialModifier × printAreaModifier + aiComplexityFee) × quantity + shipping + tax
+ * CustomFlex Universal Pricing Engine
+ *
+ * Transparent, data-driven pricing formula:
+ *   Final Price = Base Product Price + Material Price + Design Charge + Delivery Charge
+ *
+ * All values are in INR (₹).
+ * Adding a new product only requires new pricing data — zero business-logic changes.
  */
 
+/* ─── Base Product Prices (INR) ─────────────────────────────────────────────── */
 const BASE_PRICES = {
-  artwork: {
-    'canvas-print': 25,
-    'poster': 12,
-    'framed-print': 45,
-    'digital': 5,
-  },
   clothing: {
-    't-shirt': 20,
-    'hoodie': 40,
-    'jacket': 65,
-    'cap': 18,
-    'tote-bag': 15,
+    't-shirt':      399,
+    'hoodie':       799,
+    'sweatshirt':   649,
+    'jacket':       1299,
+    'jersey':       599,
+    'oversized-tee':499,
+    'polo-shirt':   499,
+  },
+  artwork: {
+    'canvas-print': 899,
+    'poster':       299,
+    'acrylic-print':1499,
+    'wooden-frame': 1199,
+    'metal-print':  1699,
+    'wall-art':     999,
+    'photo-frame':  599,
+    'sticker-pack': 199,
   },
   accessories: {
-    'phone-case': 18,
-    'mug': 14,
-    'pillow': 22,
-    'sticker': 5,
-    'notebook': 16,
+    'sneakers':     1999,
+    'cap':          399,
+    'chain':        799,
+    'ring':         599,
+    'bracelet':     499,
+    'wallet':       699,
+    'watch':        1499,
+    'phone-case':   349,
+    'laptop-skin':  449,
+    'sunglasses':   699,
+    'tote-bag':     399,
+    'backpack':     1299,
   },
 };
 
-const MATERIAL_MODIFIERS = {
-  standard: 1.0,
-  premium: 1.5,
-  luxury: 2.2,
-  organic: 1.8,
-  recycled: 1.3,
+/* ─── Material Options (INR add-on price + label) ───────────────────────────── */
+const MATERIAL_OPTIONS = {
+  // Clothing materials
+  cotton:           { label: 'Cotton',           addOn: 0,    description: 'Standard 180 GSM cotton' },
+  'premium-cotton': { label: 'Premium Cotton',   addOn: 120,  description: 'Soft 240 GSM combed cotton' },
+  'organic-cotton': { label: 'Organic Cotton',   addOn: 200,  description: 'GOTS certified organic' },
+  'oversized-cotton': { label: 'Oversized Cotton', addOn: 80, description: 'Relaxed fit 220 GSM' },
+  'dry-fit':        { label: 'Dry Fit',          addOn: 150,  description: 'Moisture-wicking polyester' },
+  polyester:        { label: 'Polyester',        addOn: 60,   description: 'Durable synthetic blend' },
+
+  // Artwork materials
+  'matte-paper':    { label: 'Matte Paper',      addOn: 0,    description: 'Standard 250 GSM matte' },
+  'glossy-paper':   { label: 'Glossy Paper',     addOn: 50,   description: 'High-gloss 300 GSM' },
+  'canvas':         { label: 'Canvas',           addOn: 300,  description: 'Artist-grade stretched canvas' },
+  'acrylic':        { label: 'Acrylic Glass',    addOn: 500,  description: '4mm shatter-resistant acrylic' },
+  'wood':           { label: 'Wood',             addOn: 400,  description: 'Birch wood panel' },
+  'metal':          { label: 'Aluminum',         addOn: 600,  description: 'Brushed aluminum sheet' },
+
+  // Accessories materials
+  'standard':       { label: 'Standard',         addOn: 0,    description: 'Default quality material' },
+  'premium':        { label: 'Premium',          addOn: 200,  description: 'Upgraded premium material' },
+  'silicone':       { label: 'Silicone',         addOn: 0,    description: 'Flexible silicone case' },
+  'hard-plastic':   { label: 'Hard Plastic',     addOn: 50,   description: 'Impact-resistant polycarbonate' },
+  'leather':        { label: 'Leather',          addOn: 350,  description: 'Genuine leather finish' },
+  'stainless-steel':{ label: 'Stainless Steel',  addOn: 250,  description: 'Brushed 316L stainless' },
 };
 
-const PRINT_AREA_MODIFIERS = {
-  'front': 1.0,
-  'back': 1.0,
-  'front-back': 1.6,
-  'left-sleeve': 1.2,
-  'right-sleeve': 1.2,
-  'all-over': 2.5,
-  'full': 1.5,
+/* ─── Design Charges (INR) — flat fee per print area ───────────────────────── */
+const DESIGN_CHARGES = {
+  front:       199,
+  back:        199,
+  'front-back':349,
+  'left-sleeve':249,
+  'right-sleeve':249,
+  'all-over':  599,
+  full:        399,
+  // Artwork / single-area products
+  standard:    149,
 };
 
-const AI_COMPLEXITY_PRICING = {
-  0: 0,      // No AI
-  1: 1,      // Very simple
-  2: 2,
-  3: 3,
-  4: 4.5,
-  5: 6,
-  6: 8,
-  7: 10,
-  8: 13,
-  9: 16,
-  10: 20,    // Maximum complexity
+/* ─── Delivery Options (INR) ─────────────────────────────────────────────────── */
+const DELIVERY_OPTIONS = {
+  standard: { label: 'Standard Delivery', price: 99,  days: '7-10 business days' },
+  express:  { label: 'Express Delivery',  price: 199, days: '3-5 business days' },
+  overnight:{ label: 'Priority Delivery', price: 349, days: '1-2 business days' },
 };
 
-const SHIPPING_RATES = {
-  standard: 5.99,
-  express: 12.99,
-  overnight: 24.99,
+/* ─── Default material per category ─────────────────────────────────────────── */
+const DEFAULT_MATERIAL = {
+  clothing:    'cotton',
+  artwork:     'matte-paper',
+  accessories: 'standard',
 };
 
-const TAX_RATE = 0.08; // 8%
+/* ─── Default print area per category ───────────────────────────────────────── */
+const DEFAULT_PRINT_AREA = {
+  clothing:    'front',
+  artwork:     'standard',
+  accessories: 'standard',
+};
 
+/**
+ * calculatePrice — Universal pricing engine
+ *
+ * @param {Object} params
+ * @param {string} params.category       - 'clothing' | 'artwork' | 'accessories'
+ * @param {string} params.subcategory    - e.g. 't-shirt', 'hoodie', 'phone-case'
+ * @param {string} params.material       - Key from MATERIAL_OPTIONS
+ * @param {string} params.printArea      - Key from DESIGN_CHARGES
+ * @param {number} params.quantity       - Number of items
+ * @param {string} params.deliveryMethod - Key from DELIVERY_OPTIONS
+ * @param {number} [params.customBasePrice] - Override base price (for DB-fetched products)
+ * @param {number} [params.customDesignCharge] - Override design charge (from Product model)
+ * @param {number} [params.customDeliveryCharge] - Override delivery charge (from Product model)
+ * @returns {Object} Full price breakdown
+ */
 const calculatePrice = ({
-  category,
+  category = 'clothing',
   subcategory,
-  material = 'standard',
-  printArea = 'front',
-  aiComplexityScore = 0,
+  material,
+  printArea,
   quantity = 1,
-  shippingMethod = 'standard',
+  deliveryMethod = 'standard',
   customBasePrice = null,
-  design = null,
+  customDesignCharge = null,
+  customDeliveryCharge = null,
 }) => {
-  // Get original base price
-  const categoryPrices = BASE_PRICES[category] || BASE_PRICES.artwork;
-  const originalBasePrice = customBasePrice || categoryPrices[subcategory] || categoryPrices[Object.keys(categoryPrices)[0]] || 20;
-  let basePrice = originalBasePrice;
+  // 1. Base product price
+  const categoryPrices = BASE_PRICES[category] || BASE_PRICES.clothing;
+  const basePrice = customBasePrice
+    || (subcategory && categoryPrices[subcategory])
+    || Object.values(categoryPrices)[0]
+    || 399;
 
-  // AI Dynamic Price Prediction factors
-  let aiAnalysis = null;
+  // 2. Material price (add-on)
+  const resolvedMaterial = material || DEFAULT_MATERIAL[category] || 'standard';
+  const materialData = MATERIAL_OPTIONS[resolvedMaterial] || MATERIAL_OPTIONS.standard;
+  const materialPrice = materialData.addOn;
 
-  if (design) {
-    let layers = [];
-    if (design.canvasData && typeof design.canvasData === 'object') {
-      layers = design.canvasData.objects || [];
-    } else if (design.canvasData && typeof design.canvasData === 'string') {
-      try {
-        const parsed = JSON.parse(design.canvasData);
-        layers = parsed.objects || [];
-      } catch (e) {}
-    }
+  // 3. Design charge
+  const resolvedPrintArea = printArea || DEFAULT_PRINT_AREA[category] || 'standard';
+  const designCharge = customDesignCharge !== null
+    ? customDesignCharge
+    : (DESIGN_CHARGES[resolvedPrintArea] || DESIGN_CHARGES.standard);
 
-    // Count layer types
-    let vectorsCount = 0;
-    let textCount = 0;
-    let imageCount = 0;
-    let shapesCount = 0;
-    const colorsSet = new Set();
+  // 4. Delivery charge
+  const deliveryData = DELIVERY_OPTIONS[deliveryMethod] || DELIVERY_OPTIONS.standard;
+  const deliveryCharge = customDeliveryCharge !== null
+    ? customDeliveryCharge
+    : deliveryData.price;
 
-    layers.forEach(obj => {
-      const type = obj.type || '';
-      if (type === 'path') {
-        vectorsCount++;
-      } else if (type === 'text' || type === 'i-text' || type.includes('text')) {
-        textCount++;
-      } else if (type === 'image') {
-        imageCount++;
-      } else {
-        shapesCount++;
-      }
+  // 5. Per-unit subtotal
+  const unitPrice = basePrice + materialPrice + designCharge;
 
-      // Track colors
-      if (obj.fill && typeof obj.fill === 'string') {
-        const fillLower = obj.fill.toLowerCase();
-        if (fillLower !== 'transparent' && fillLower !== 'none' && !fillLower.includes('url')) {
-          colorsSet.add(obj.fill);
-        }
-      }
-      if (obj.stroke && typeof obj.stroke === 'string') {
-        const strokeLower = obj.stroke.toLowerCase();
-        if (strokeLower !== 'transparent' && strokeLower !== 'none') {
-          colorsSet.add(obj.stroke);
-        }
-      }
-    });
+  // 6. Quantity total (before delivery)
+  const itemsTotal = unitPrice * quantity;
 
-    const colorsCount = colorsSet.size || 1; // At least 1 color
-
-    // Compute complexity percentage and dynamic modifiers
-    let complexityModifier = 0.0;
-    let insights = [];
-
-    const totalElements = layers.length;
-    if (totalElements === 0) {
-      complexityModifier -= 0.15;
-      insights.push('Blank canvas base rate adjustment (-15%)');
-    } else if (totalElements <= 2) {
-      complexityModifier -= 0.10;
-      insights.push('Minimalist design layout discount (-10%)');
-    } else if (totalElements > 12) {
-      complexityModifier += 0.15;
-      insights.push(`High-density layout processing (${totalElements} elements) (+15%)`);
-    } else if (totalElements > 6) {
-      complexityModifier += 0.08;
-      insights.push(`Multi-layered layout setup (+8%)`);
-    } else {
-      insights.push('Standard layout complexity (Optimal print rate)');
-    }
-
-    // Color density modifier
-    let colorModifier = 0.0;
-    if (colorsCount === 1) {
-      colorModifier -= 0.05;
-      insights.push('Monochromatic color print discount (-5%)');
-    } else if (colorsCount > 5) {
-      colorModifier += 0.05;
-      insights.push(`High color diversity print rate (${colorsCount} colors) (+5%)`);
-    } else {
-      insights.push('Standard color density (Eco-friendly CMYK ink usage)');
-    }
-
-    // Creator popularity modifier
-    let popularityModifier = 0.0;
-    const purchaseCount = design.purchaseCount || 0;
-    if (purchaseCount > 20) {
-      popularityModifier += 0.10;
-      insights.push('Trending creator layout royalty (+10%)');
-    } else if (purchaseCount > 5) {
-      popularityModifier += 0.05;
-      insights.push('Featured creator template royalty (+5%)');
-    }
-
-    // AI elements check
-    if (design.aiElementsUsed) {
-      insights.push('AI-generated design components detected');
-    }
-
-    // Apply modifiers to base price
-    const totalModifier = complexityModifier + colorModifier + popularityModifier;
-    basePrice = originalBasePrice * (1 + totalModifier);
-
-    // Limit price change to be safe (min 75%, max 140% of original base price)
-    const minPrice = originalBasePrice * 0.75;
-    const maxPrice = originalBasePrice * 1.40;
-    basePrice = Math.max(minPrice, Math.min(maxPrice, basePrice));
-
-    // Calculate score values for UI (0 to 100)
-    const complexityScore = Math.min(Math.round((totalElements / 15) * 100), 100);
-    const inkDensityScore = Math.min(Math.round((colorsCount / 10) * 100), 100);
-    const manufacturingLoadScore = Math.min(Math.round(((vectorsCount * 2 + textCount * 5 + imageCount * 15 + shapesCount * 3) / 40) * 100), 100);
-
-    aiAnalysis = {
-      layerCount: totalElements,
-      vectorsCount,
-      textCount,
-      imageCount,
-      shapesCount,
-      colorsCount,
-      insights,
-      inkDensityScore,
-      complexityScore,
-      manufacturingLoadScore,
-      originalBasePrice: parseFloat(originalBasePrice.toFixed(2)),
-      aiPricePredictionApplied: true
-    };
-  }
-
-  // Apply modifiers
-  const materialMod = MATERIAL_MODIFIERS[material] || 1.0;
-  const printAreaMod = PRINT_AREA_MODIFIERS[printArea] || 1.0;
-  const aiComplexityFee = AI_COMPLEXITY_PRICING[Math.min(Math.round(aiComplexityScore), 10)] || 0;
-
-  // Calculate per-unit price
-  const unitPrice = basePrice * materialMod * printAreaMod + aiComplexityFee;
-  const subtotal = unitPrice * quantity;
-
-  // Quantity discount
+  // 7. Quantity discount
   let quantityDiscount = 0;
-  if (quantity >= 10) quantityDiscount = 0.15;
-  else if (quantity >= 5) quantityDiscount = 0.10;
-  else if (quantity >= 3) quantityDiscount = 0.05;
+  if (quantity >= 10) quantityDiscount = Math.round(itemsTotal * 0.15);
+  else if (quantity >= 5) quantityDiscount = Math.round(itemsTotal * 0.10);
+  else if (quantity >= 3) quantityDiscount = Math.round(itemsTotal * 0.05);
 
-  const discountedSubtotal = subtotal * (1 - quantityDiscount);
-  const shipping = SHIPPING_RATES[shippingMethod] || SHIPPING_RATES.standard;
-  const tax = discountedSubtotal * TAX_RATE;
-  const total = discountedSubtotal + shipping + tax;
+  const discountedTotal = itemsTotal - quantityDiscount;
+
+  // 8. Final total
+  const total = discountedTotal + deliveryCharge;
 
   return {
-    basePrice: parseFloat(basePrice.toFixed(2)),
-    originalBasePrice: parseFloat(originalBasePrice.toFixed(2)),
-    materialModifier: materialMod,
-    printAreaModifier: printAreaMod,
-    aiComplexityFee: parseFloat(aiComplexityFee.toFixed(2)),
-    unitPrice: parseFloat(unitPrice.toFixed(2)),
+    // Breakdown line items (what the UI shows)
+    basePrice,
+    materialPrice,
+    materialLabel: materialData.label,
+    materialDescription: materialData.description,
+    designCharge,
+    printAreaLabel: resolvedPrintArea.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    deliveryCharge,
+    deliveryLabel: deliveryData.label,
+    deliveryDays: deliveryData.days,
+
+    // Totals
+    unitPrice,
     quantity,
-    subtotal: parseFloat(subtotal.toFixed(2)),
-    quantityDiscount: parseFloat((subtotal * quantityDiscount).toFixed(2)),
-    discountedSubtotal: parseFloat(discountedSubtotal.toFixed(2)),
-    shipping: parseFloat(shipping.toFixed(2)),
-    tax: parseFloat(tax.toFixed(2)),
-    total: parseFloat(total.toFixed(2)),
-    aiAnalysis,
+    itemsTotal,
+    quantityDiscount,
+    discountedTotal,
+    total,
+
+    // Currency
+    currency: 'INR',
+
+    // Legacy-compatible fields (used by Order model)
+    subtotal: itemsTotal,
+    shipping: deliveryCharge,
+    tax: 0, // GST is included in base prices for simplicity
   };
 };
 
+/**
+ * getAvailableOptions — Returns all selectable options for the frontend
+ */
 const getAvailableOptions = () => ({
   basePrices: BASE_PRICES,
-  materials: Object.keys(MATERIAL_MODIFIERS).map((key) => ({
-    id: key,
-    label: key.charAt(0).toUpperCase() + key.slice(1),
-    modifier: MATERIAL_MODIFIERS[key],
+  materials: Object.entries(MATERIAL_OPTIONS).map(([id, data]) => ({
+    id,
+    label: data.label,
+    addOn: data.addOn,
+    description: data.description,
   })),
-  printAreas: Object.keys(PRINT_AREA_MODIFIERS).map((key) => ({
-    id: key,
-    label: key.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-    modifier: PRINT_AREA_MODIFIERS[key],
+  materialsByCategory: {
+    clothing:    ['cotton', 'premium-cotton', 'organic-cotton', 'oversized-cotton', 'dry-fit', 'polyester'],
+    artwork:     ['matte-paper', 'glossy-paper', 'canvas', 'acrylic', 'wood', 'metal'],
+    accessories: ['standard', 'premium', 'silicone', 'hard-plastic', 'leather', 'stainless-steel'],
+  },
+  printAreas: Object.entries(DESIGN_CHARGES).map(([id, charge]) => ({
+    id,
+    label: id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    charge,
   })),
-  shippingMethods: Object.entries(SHIPPING_RATES).map(([key, rate]) => ({
-    id: key,
-    label: key.charAt(0).toUpperCase() + key.slice(1),
-    price: rate,
+  deliveryOptions: Object.entries(DELIVERY_OPTIONS).map(([id, data]) => ({
+    id,
+    label: data.label,
+    price: data.price,
+    days: data.days,
   })),
-  taxRate: TAX_RATE,
+  currency: 'INR',
 });
 
-module.exports = { calculatePrice, getAvailableOptions };
+module.exports = { calculatePrice, getAvailableOptions, MATERIAL_OPTIONS, DESIGN_CHARGES, DELIVERY_OPTIONS, BASE_PRICES };

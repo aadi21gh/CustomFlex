@@ -4,8 +4,9 @@ import { motion } from 'framer-motion';
 import {
   Shield, Users, ShoppingBag, RefreshCw, BarChart2,
   CheckCircle2, XCircle, Search, Edit2, Loader2, ArrowRight,
-  TrendingUp, Clock, Truck,
+  TrendingUp, Clock, Truck, Trophy,
 } from 'lucide-react';
+import RewardConfigPanel from './RewardConfig';
 import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -16,7 +17,8 @@ const TABS = [
   { id: 'stats', label: 'Stats & Revenue', icon: BarChart2 },
   { id: 'users', label: 'Users Manager', icon: Users },
   { id: 'orders', label: 'Orders Manager', icon: ShoppingBag },
-  { id: 'refunds', label: 'Refund Requests', icon: RefreshCw },
+  { id: 'refunds', label: 'Reward Requests', icon: RefreshCw },
+  { id: 'reward-config', label: 'Reward Config', icon: Trophy },
 ];
 
 const AdminPanel = () => {
@@ -320,10 +322,13 @@ const AdminPanel = () => {
                   </div>
                 ))}
                 {refunds.length === 0 && (
-                  <p className="text-center py-10 text-dark-400">No refunds requests pending</p>
+                  <p className="text-center py-10 text-dark-400">No reward requests pending</p>
                 )}
               </div>
             )}
+
+            {/* Reward Config Tab */}
+            {activeTab === 'reward-config' && <RewardConfigPanel />}
           </motion.div>
         )}
       </div>

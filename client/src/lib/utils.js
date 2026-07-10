@@ -10,9 +10,9 @@ export const formatDate = (date) => {
 
 export const timeAgo = (date) => formatDistanceToNow(new Date(date), { addSuffix: true });
 
-// Format price
-export const formatPrice = (amount, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+// Format price — defaults to INR (₹)
+export const formatPrice = (amount, currency = 'INR') =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
 
 // Format large numbers
 export const formatCount = (num) => {
