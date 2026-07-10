@@ -12,9 +12,9 @@ const CATEGORIES = [
     title: 'Clothing',
     tagline: 'Wear your design',
     description: 'Custom t-shirts, hoodies, sweatshirts, jackets and more. Wear your creativity literally.',
-    gradient: 'from-blue-600 to-cyan-500',
-    accentColor: '#06b6d4',
-    glowColor: 'rgba(6,182,212,0.25)',
+    gradient: 'from-brand-600 to-purple-600',
+    accentColor: '#C76D4A',
+    glowColor: 'rgba(199,109,74,0.25)',
     href: '/studio/clothing',
     products: [
       { emoji: '👕', name: 'T-Shirt',        from: '₹399',  tag: 'Bestseller' },
@@ -32,9 +32,9 @@ const CATEGORIES = [
     title: 'Artwork',
     tagline: 'Hang your vision',
     description: 'Canvas prints, posters, acrylic prints, wood frames & more. Turn creativity into wall-worthy masterpieces.',
-    gradient: 'from-violet-600 to-purple-500',
-    accentColor: '#8b5cf6',
-    glowColor: 'rgba(139,92,246,0.25)',
+    gradient: 'from-purple-500 to-brand-500',
+    accentColor: '#8A9A7B',
+    glowColor: 'rgba(138,154,123,0.25)',
     href: '/studio/artwork',
     products: [
       { emoji: '🖼️', name: 'Canvas Print',   from: '₹899',  tag: 'Gallery' },
@@ -53,9 +53,9 @@ const CATEGORIES = [
     title: 'Accessories',
     tagline: 'Carry your style',
     description: 'Sneakers, phone cases, watches, jewelry & bags. Small items, massive impact.',
-    gradient: 'from-orange-600 to-pink-500',
-    accentColor: '#ec4899',
-    glowColor: 'rgba(236,72,153,0.25)',
+    gradient: 'from-brand-600 to-brand-800',
+    accentColor: '#5B4636',
+    glowColor: 'rgba(91,70,54,0.25)',
     href: '/studio/accessories',
     products: [
       { emoji: '👟', name: 'Sneakers',        from: '₹1,999',tag: 'Exclusive' },
@@ -239,15 +239,15 @@ const ProductBrowser = ({ cat }) => {
         {/* CTA banner */}
         <div
           className={`mt-6 p-4 rounded-2xl flex items-center justify-between bg-gradient-to-r ${gradient}`}
-          style={{ opacity: 0.85 }}
+          style={{ opacity: 0.9 }}
         >
           <div>
-            <p className="text-white font-bold text-sm">Ready to design?</p>
-            <p className="text-white/70 text-xs mt-0.5">
+            <p className="text-dark-950 font-bold text-sm">Ready to design?</p>
+            <p className="text-dark-950/70 text-xs mt-0.5">
               Open the studio → customize → order. Transparent pricing, instant preview.
             </p>
           </div>
-          <Link to={href} className="btn-secondary !py-2 !px-4 text-xs flex-shrink-0 !bg-white/20 !border-white/30 hover:!bg-white/30">
+          <Link to={href} className="btn-secondary !py-2 !px-4 text-xs flex-shrink-0 !bg-dark-950/20 !border-dark-950/30 hover:!bg-dark-950/30 !text-dark-950">
             Design Now <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

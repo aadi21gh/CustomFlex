@@ -658,7 +658,7 @@ const Checkout = () => {
               {selectedProduct && (
                 <div
                   className="flex items-center gap-3 p-3 rounded-xl mb-5"
-                  style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}
+                  style={{ background: 'rgba(199,109,74,0.08)', border: '1px solid rgba(199,109,74,0.2)' }}
                 >
                   <span className="text-2xl">{selectedProduct.emoji || '🎁'}</span>
                   <div className="flex-1 min-w-0">
@@ -669,16 +669,16 @@ const Checkout = () => {
                   </div>
                 </div>
               )}
-
+            
               {/* THE PRICE BREAKDOWN */}
               <PriceBreakdown pricing={pricing} isLoading={isCalculating} />
-
+            
               {/* Reward info nudge */}
               <div
                 className="flex items-start gap-2 mt-5 p-3 rounded-xl"
-                style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}
+                style={{ background: 'rgba(138,154,123,0.08)', border: '1px solid rgba(138,154,123,0.2)' }}
               >
-                <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-dark-400 leading-relaxed">
                   Share your product photo after delivery. When enough people like it, you could earn a reward worth your purchase price! 🎉
                 </p>

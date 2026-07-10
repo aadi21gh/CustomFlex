@@ -28,24 +28,24 @@ const fadeUp = {
 
 /* ─── Product Cards Data ────────────────────────────────────────────────────── */
 const PRODUCTS = [
-  { emoji: '👕', name: 'Classic Tee', tag: 'Bestseller', color: '#6366f1', category: 'Clothing' },
-  { emoji: '🧥', name: 'Hoodie', tag: 'Trending', color: '#8b5cf6', category: 'Clothing' },
-  { emoji: '👟', name: 'Sneakers', tag: 'New', color: '#ec4899', category: 'Footwear' },
-  { emoji: '🧢', name: 'Cap', tag: 'Popular', color: '#06b6d4', category: 'Accessories' },
-  { emoji: '🖼️', name: 'Canvas Art', tag: 'Art', color: '#10b981', category: 'Artwork' },
-  { emoji: '🎨', name: 'Wall Decor', tag: 'Creative', color: '#f59e0b', category: 'Artwork' },
-  { emoji: '📱', name: 'Phone Case', tag: 'Hot', color: '#ef4444', category: 'Accessories' },
-  { emoji: '☕', name: 'Coffee Mug', tag: 'Cozy', color: '#84cc16', category: 'Lifestyle' },
-  { emoji: '💻', name: 'Laptop Skin', tag: 'Tech', color: '#3b82f6', category: 'Accessories' },
-  { emoji: '🎒', name: 'Backpack', tag: 'Carry', color: '#a855f7', category: 'Bags' },
-  { emoji: '👜', name: 'Tote Bag', tag: 'Eco', color: '#14b8a6', category: 'Bags' },
-  { emoji: '🖥️', name: 'Poster', tag: 'Print', color: '#f97316', category: 'Artwork' },
-  { emoji: '💍', name: 'Ring', tag: 'Luxury', color: '#e879f9', category: 'Jewelry' },
-  { emoji: '⌚', name: 'Watch', tag: 'Style', color: '#64748b', category: 'Jewelry' },
-  { emoji: '🕶️', name: 'Sunglasses', tag: 'Vibe', color: '#0ea5e9', category: 'Accessories' },
-  { emoji: '📦', name: 'Sticker Pack', tag: 'Fun', color: '#fbbf24', category: 'Stickers' },
-  { emoji: '🧣', name: 'Sweatshirt', tag: 'Warm', color: '#7c3aed', category: 'Clothing' },
-  { emoji: '🪙', name: 'Chain', tag: 'Bold', color: '#d97706', category: 'Jewelry' },
+  { emoji: '👕', name: 'Classic Tee', tag: 'Bestseller', color: '#C76D4A', category: 'Clothing' },
+  { emoji: '🧥', name: 'Hoodie', tag: 'Trending', color: '#8A9A7B', category: 'Clothing' },
+  { emoji: '👟', name: 'Sneakers', tag: 'New', color: '#5B4636', category: 'Footwear' },
+  { emoji: '🧢', name: 'Cap', tag: 'Popular', color: '#D89377', category: 'Accessories' },
+  { emoji: '🖼️', name: 'Canvas Art', tag: 'Art', color: '#8A9A7B', category: 'Artwork' },
+  { emoji: '🎨', name: 'Wall Decor', tag: 'Creative', color: '#E7B8A4', category: 'Artwork' },
+  { emoji: '📱', name: 'Phone Case', tag: 'Hot', color: '#B24C3D', category: 'Accessories' },
+  { emoji: '☕', name: 'Coffee Mug', tag: 'Cozy', color: '#8A9A7B', category: 'Lifestyle' },
+  { emoji: '💻', name: 'Laptop Skin', tag: 'Tech', color: '#5B4636', category: 'Accessories' },
+  { emoji: '🎒', name: 'Backpack', tag: 'Carry', color: '#C76D4A', category: 'Bags' },
+  { emoji: '👜', name: 'Tote Bag', tag: 'Eco', color: '#8A9A7B', category: 'Bags' },
+  { emoji: '🖥️', name: 'Poster', tag: 'Print', color: '#C76D4A', category: 'Artwork' },
+  { emoji: '💍', name: 'Ring', tag: 'Luxury', color: '#DFD8C9', category: 'Jewelry' },
+  { emoji: '⌚', name: 'Watch', tag: 'Style', color: '#7A6C5C', category: 'Jewelry' },
+  { emoji: '🕶️', name: 'Sunglasses', tag: 'Vibe', color: '#8A9A7B', category: 'Accessories' },
+  { emoji: '📦', name: 'Sticker Pack', tag: 'Fun', color: '#EFEAE0', category: 'Stickers' },
+  { emoji: '🧣', name: 'Sweatshirt', tag: 'Warm', color: '#5B4636', category: 'Clothing' },
+  { emoji: '🪙', name: 'Chain', tag: 'Bold', color: '#C76D4A', category: 'Jewelry' },
 ];
 
 /* ─── Layout positions for 18 floating cards ───────────────────────────────── */
@@ -258,6 +258,24 @@ const AnimatedHeadline = () => {
   );
 };
 
+const formatTimeAgo = (dateVal) => {
+  if (!dateVal) return '';
+  const date = new Date(dateVal);
+  const seconds = Math.floor((new Date() - date) / 1000);
+  
+  let interval = Math.floor(seconds / 31536000);
+  if (interval >= 1) return `${interval}y ago`;
+  interval = Math.floor(seconds / 2592000);
+  if (interval >= 1) return `${interval}mo ago`;
+  interval = Math.floor(seconds / 86400);
+  if (interval >= 1) return `${interval}d ago`;
+  interval = Math.floor(seconds / 3600);
+  if (interval >= 1) return `${interval}h ago`;
+  interval = Math.floor(seconds / 60);
+  if (interval >= 1) return `${interval}m ago`;
+  return 'just now';
+};
+
 /* ─── Main Landing Component ─────────────────────────────────────────────────── */
 const Landing = () => {
   const heroRef = useRef(null);
@@ -300,11 +318,11 @@ const Landing = () => {
   /* ─── Static data ───────────────────────────────────────────────────────── */
   const features = [
     { icon: Palette, title: 'Professional Design Studio', description: 'Canva-level editor with layers, text, shapes, image upload, and real-time product preview.', gradient: 'bg-gradient-to-br from-brand-600 to-purple-600', delay: 0 },
-    { icon: ShoppingBag, title: 'Order Custom Products', description: 'Turn your designs into real products. Transparent pricing based on materials, size, and delivery.', gradient: 'bg-gradient-to-br from-blue-600 to-cyan-600', delay: 1 },
-    { icon: Share2, title: 'Share & Earn Rewards', description: 'Post your purchases to the community. When your design goes viral, earn rewards automatically.', gradient: 'bg-gradient-to-br from-emerald-600 to-teal-600', delay: 2 },
-    { icon: Zap, title: 'Lightning Fast', description: 'Optimized studio with instant previews, autosave, and smooth 60fps animations throughout.', gradient: 'bg-gradient-to-br from-orange-600 to-yellow-600', delay: 3 },
-    { icon: Shield, title: 'Secure Payments', description: 'Stripe-powered checkout with bank-grade security. Your financial data is always protected.', gradient: 'bg-gradient-to-br from-red-600 to-pink-600', delay: 4 },
-    { icon: Users, title: 'Vibrant Community', description: 'Follow creators, like posts, leave comments, and discover trending designs every day.', gradient: 'bg-gradient-to-br from-violet-600 to-purple-600', delay: 5 },
+    { icon: ShoppingBag, title: 'Order Custom Products', description: 'Turn your designs into real products. Transparent pricing based on materials, size, and delivery.', gradient: 'bg-gradient-to-br from-brand-500 to-purple-500', delay: 1 },
+    { icon: Share2, title: 'Share & Earn Rewards', description: 'Post your purchases to the community. When your design goes viral, earn rewards automatically.', gradient: 'bg-gradient-to-br from-brand-700 to-brand-500', delay: 2 },
+    { icon: Zap, title: 'Lightning Fast', description: 'Optimized studio with instant previews, autosave, and smooth 60fps animations throughout.', gradient: 'bg-gradient-to-br from-brand-500 to-dark-600', delay: 3 },
+    { icon: Shield, title: 'Secure Payments', description: 'Stripe-powered checkout with bank-grade security. Your financial data is always protected.', gradient: 'bg-gradient-to-br from-brand-600 to-brand-800', delay: 4 },
+    { icon: Users, title: 'Vibrant Community', description: 'Follow creators, like posts, leave comments, and discover trending designs every day.', gradient: 'bg-gradient-to-br from-brand-600 to-purple-500', delay: 5 },
   ];
 
   const testimonials = [
@@ -465,7 +483,7 @@ const Landing = () => {
             transition={{ delay: 0.7 }}
           >
             <div className="flex -space-x-2">
-              {['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981'].map((color, i) => (
+              {['#C76D4A', '#8A9A7B', '#5B4636', '#D89377', '#AFA38E'].map((color, i) => (
                 <div
                   key={i}
                   className="w-8 h-8 rounded-full border-2 border-dark-950 flex items-center justify-center text-xs font-bold text-white"
@@ -490,7 +508,7 @@ const Landing = () => {
             <span className="text-xs text-dark-600 tracking-widest uppercase font-medium">Scroll</span>
             <motion.div
               className="w-px h-8 rounded-full"
-              style={{ background: 'linear-gradient(to bottom, rgba(99,102,241,0.6), transparent)' }}
+              style={{ background: 'linear-gradient(to bottom, rgba(199,109,74,0.6), transparent)' }}
               animate={{ scaleY: [0.3, 1, 0.3], opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
             />
@@ -500,7 +518,7 @@ const Landing = () => {
 
       {/* ─── Stats ───────────────────────────────────────────────────────────── */}
       <section className="py-20 border-y border-glass-border relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.08) 0%, transparent 60%)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(199,109,74,0.08) 0%, transparent 60%)' }} />
         <div className="section-container relative">
           <motion.div
             className="grid grid-cols-2 md:grid-cols-4 gap-8"
@@ -550,7 +568,7 @@ const Landing = () => {
 
       {/* ─── Product Showcase Strip ──────────────────────────────────────────── */}
       <section className="py-16 overflow-hidden border-y border-glass-border relative">
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.05) 0%, transparent 70%)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(199,109,74,0.05) 0%, transparent 70%)' }} />
         <div className="section-container mb-10 relative">
           <motion.div
             className="text-center"
@@ -569,8 +587,8 @@ const Landing = () => {
 
         {/* Scrolling product strip */}
         <div className="relative">
-          <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, #0a0a0f, transparent)' }} />
-          <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, #0a0a0f, transparent)' }} />
+          <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, #F7F3EB, transparent)' }} />
+          <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, #F7F3EB, transparent)' }} />
           <motion.div
             className="flex gap-4 px-4"
             animate={{ x: [0, `-${PRODUCTS.length * (160 / 2)}px`] }}
@@ -600,7 +618,7 @@ const Landing = () => {
 
       {/* ─── How It Works ────────────────────────────────────────────────────── */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 60%)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(199,109,74,0.06) 0%, transparent 60%)' }} />
         <div className="section-container relative">
           <motion.div
             className="text-center mb-16"
@@ -620,7 +638,7 @@ const Landing = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
             {/* Connecting line */}
-            <div className="hidden lg:block absolute top-10 left-[12.5%] right-[12.5%] h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.4), rgba(139,92,246,0.4), transparent)' }} />
+            <div className="hidden lg:block absolute top-10 left-[12.5%] right-[12.5%] h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(199, 109, 74, 0.4), rgba(138, 154, 123, 0.4), transparent)' }} />
 
             {howItWorks.map(({ step, title, description, icon: Icon }, i) => (
               <motion.div
@@ -633,10 +651,10 @@ const Landing = () => {
                 variants={fadeUp}
               >
                 <div className="relative inline-flex items-center justify-center mb-6">
-                  <div className="w-20 h-20 rounded-2xl glass-card flex items-center justify-center" style={{ border: '1px solid rgba(99,102,241,0.3)' }}>
+                  <div className="w-20 h-20 rounded-2xl glass-card flex items-center justify-center" style={{ border: '1px solid rgba(199,109,74,0.3)' }}>
                     <Icon className="w-8 h-8 text-brand-400" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: 'linear-gradient(135deg, #C76D4A, #8A9A7B)' }}>
                     {i + 1}
                   </div>
                 </div>
@@ -657,7 +675,7 @@ const Landing = () => {
           viewport={{ once: true }}
           variants={fadeUp}
         >
-          <div className="absolute top-0 right-0 w-96 h-96 opacity-10" style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
+          <div className="absolute top-0 right-0 w-96 h-96 opacity-10" style={{ background: 'radial-gradient(circle, #C76D4A, transparent 70%)' }} />
           <div className="relative grid md:grid-cols-2 gap-12 items-center">
             <div>
               <span className="tag mb-4">Reward System</span>
@@ -686,50 +704,86 @@ const Landing = () => {
               </Link>
             </div>
             <div className="space-y-4">
-              {/* Mock reward status card */}
-              <div className="glass-card p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-dark-400">Custom Hoodie Design</span>
-                  <span className="tag">Reward Eligible ✨</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-dark-400">Post Likes</span>
-                    <span className="text-emerald-400 font-semibold">847 / 750 ✓</span>
+              {/* Dynamic reward status card */}
+              {(() => {
+                const featured = stats.featuredReward || {
+                  title: 'Custom Hoodie Design',
+                  likes: 847,
+                  requiredLikes: 750,
+                  buyers: 3,
+                  requiredBuyers: 2,
+                  amount: '₹4,250'
+                };
+                return (
+                  <div className="glass-card p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-dark-400">{featured.title}</span>
+                      <span className="tag">
+                        {featured.likes >= featured.requiredLikes && featured.buyers >= featured.requiredBuyers ? 'Reward Eligible ✨' : 'In Progress ⏳'}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-dark-400">Post Likes</span>
+                        <span className="text-emerald-400 font-semibold">
+                          {featured.likes} / {featured.requiredLikes} {featured.likes >= featured.requiredLikes ? '✓' : ''}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(100, (featured.likes / featured.requiredLikes) * 100)}%`,
+                            background: 'linear-gradient(90deg, #8A9A7B, #C76D4A)'
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-dark-400">Unique Buyers</span>
+                        <span className="text-brand-400 font-semibold">
+                          {featured.buyers} / {featured.requiredBuyers} {featured.buyers >= featured.requiredBuyers ? '✓' : ''}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold mt-2">
+                        <span className="text-white">Reward Amount</span>
+                        <span className="gradient-text text-xl">{featured.amount}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: '100%', background: 'linear-gradient(90deg, #10b981, #06b6d4)' }} />
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-dark-400">Unique Buyers</span>
-                    <span className="text-blue-400 font-semibold">3 / 2 ✓</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-semibold mt-2">
-                    <span className="text-white">Reward Amount</span>
-                    <span className="gradient-text text-xl">₹4,250</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
+
               <div className="glass-card p-5">
                 <div className="text-xs text-dark-500 mb-2">Recent Reward Activity</div>
-                {[
-                  { user: 'Sarah M.', amount: '₹2,800', time: '2h ago' },
-                  { user: 'James W.', amount: '₹5,200', time: '5h ago' },
-                  { user: 'Aisha P.', amount: '₹1,950', time: '1d ago' },
-                ].map((r, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-glass-border last:border-0">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
-                        {r.user[0]}
+                {(() => {
+                  const displayRewards = stats.recentRewards && stats.recentRewards.length > 0
+                    ? stats.recentRewards
+                    : [
+                        { user: 'Sarah M.', amount: '₹2,800', time: '2h ago' },
+                        { user: 'James W.', amount: '₹5,200', time: '5h ago' },
+                        { user: 'Aisha P.', amount: '₹1,950', time: '1d ago' },
+                      ];
+                  return displayRewards.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-glass-border last:border-0">
+                      <div className="flex items-center gap-2">
+                        {r.avatar ? (
+                          <img src={r.avatar} alt={r.user} className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                            {r.user ? r.user[0] : 'C'}
+                          </div>
+                        )}
+                        <span className="text-xs text-dark-300">{r.user} got rewarded</span>
                       </div>
-                      <span className="text-xs text-dark-300">{r.user} got rewarded</span>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-emerald-400">{r.amount}</div>
+                        <div className="text-xs text-dark-500">
+                          {typeof r.time === 'string' && r.time.includes('ago') ? r.time : formatTimeAgo(r.time)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-emerald-400">{r.amount}</div>
-                      <div className="text-xs text-dark-500">{r.time}</div>
-                    </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           </div>
@@ -757,9 +811,14 @@ const Landing = () => {
           transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
           style={{ width: 'max-content' }}
         >
-          {[...testimonials, ...testimonials].map((t, i) => (
-            <TestimonialCard key={i} {...t} />
-          ))}
+          {(() => {
+            const displayTestimonials = stats.testimonials && stats.testimonials.length > 0
+              ? stats.testimonials
+              : testimonials;
+            return [...displayTestimonials, ...displayTestimonials].map((t, i) => (
+              <TestimonialCard key={i} {...t} />
+            ));
+          })()}
         </motion.div>
       </section>
 
@@ -772,7 +831,7 @@ const Landing = () => {
           viewport={{ once: true }}
           variants={fadeUp}
         >
-          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.15) 0%, transparent 60%)' }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(199,109,74,0.15) 0%, transparent 60%)' }} />
           <motion.div
             className="relative"
             animate={{ y: [0, -10, 0] }}

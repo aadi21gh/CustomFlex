@@ -454,6 +454,132 @@ const seedProducts = async () => {
   }
 };
 
+const seedCommunityData = async () => {
+  try {
+    const User = require('../models/User');
+    const Design = require('../models/Design');
+    const Order = require('../models/Order');
+    const Post = require('../models/Post');
+    const Comment = require('../models/Comment');
+    const Refund = require('../models/Refund');
+    const Product = require('../models/Product');
+
+    const userCount = await User.countDocuments();
+    if (userCount > 1) return; // Already seeded community data or has other users
+
+    console.log('🌱 Seeding community data...');
+
+    // 1. Create Users
+    const usersData = [
+      { name: 'Sarah Chen', email: 'sarah@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', role: 'user', isEmailVerified: true },
+      { name: 'Marcus Rivera', email: 'marcus@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', role: 'user', isEmailVerified: true },
+      { name: 'Aisha Patel', email: 'aisha@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', role: 'user', isEmailVerified: true },
+      { name: 'James Wu', email: 'james@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', role: 'user', isEmailVerified: true },
+      { name: 'Elena Rostova', email: 'elena@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', role: 'user', isEmailVerified: true }
+    ];
+
+    const users = [];
+    for (const u of usersData) {
+      let user = await User.findOne({ email: u.email });
+      if (!user) {
+        user = await User.create(u);
+      }
+      users.push(user);
+    }
+
+    // 2. Fetch Products
+    const tShirtProduct = await Product.findOne({ subcategory: 't-shirt' });
+    const hoodieProduct = await Product.findOne({ subcategory: 'hoodie' });
+    const canvasProduct = await Product.findOne({ subcategory: 'canvas-print' });
+
+    if (!tShirtProduct || !hoodieProduct || !canvasProduct) {
+      console.log('⚠️ Required products for seeding community data not found. Skipping.');
+      return;
+    }
+
+    // 3. Create Designs
+    const designsData = [
+      { title: 'Cyberpunk Sunset', category: 'clothing', canvasData: { objects: [] }, thumbnail: { url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400' }, user: users[0]._id, isPublic: true, isDraft: false, purchaseCount: 12 },
+      { title: 'Aesthetic Line Art', category: 'clothing', canvasData: { objects: [] }, thumbnail: { url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400' }, user: users[1]._id, isPublic: true, isDraft: false, purchaseCount: 8 },
+      { title: 'Neon Dreamscape', category: 'artwork', canvasData: { objects: [] }, thumbnail: { url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400' }, user: users[2]._id, isPublic: true, isDraft: false, purchaseCount: 15 },
+      { title: 'Retro Vaporwave', category: 'clothing', canvasData: { objects: [] }, thumbnail: { url: 'https://images.unsplash.com/photo-1515260268569-9271009adfdb?w=400' }, user: users[3]._id, isPublic: true, isDraft: false, purchaseCount: 4 },
+      { title: 'Minimalist Mountain', category: 'artwork', canvasData: { objects: [] }, thumbnail: { url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400' }, user: users[4]._id, isPublic: true, isDraft: false, purchaseCount: 9 },
+    ];
+
+    const designs = await Design.insertMany(designsData);
+
+    // 4. Create Orders
+    const ordersData = [
+      {
+        user: users[0]._id, design: designs[0]._id, product: hoodieProduct._id, quantity: 1, selectedMaterial: 'premium-cotton', selectedSize: 'L', selectedColor: 'Black',
+        pricing: { basePrice: 799, subtotal: 799, total: 899 }, isPaid: true, paidAt: new Date(Date.now() - 5*24*60*60*1000), status: 'refunded', refundEligible: true,
+        shippingAddress: { fullName: 'Sarah Chen', address: '123 Tech Lane', city: 'Mumbai', state: 'MH', postalCode: '400001', country: 'India' }
+      },
+      {
+        user: users[1]._id, design: designs[1]._id, product: tShirtProduct._id, quantity: 1, selectedMaterial: 'cotton', selectedSize: 'M', selectedColor: 'White',
+        pricing: { basePrice: 399, subtotal: 399, total: 499 }, isPaid: true, paidAt: new Date(Date.now() - 4*24*60*60*1000), status: 'refunded', refundEligible: true,
+        shippingAddress: { fullName: 'Marcus Rivera', address: '456 Art Way', city: 'Delhi', state: 'DL', postalCode: '110001', country: 'India' }
+      },
+      {
+        user: users[2]._id, design: designs[2]._id, product: canvasProduct._id, quantity: 1, selectedMaterial: 'canvas', selectedSize: '12×16"', selectedColor: 'Standard',
+        pricing: { basePrice: 899, subtotal: 899, total: 999 }, isPaid: true, paidAt: new Date(Date.now() - 3*24*60*60*1000), status: 'refunded', refundEligible: true,
+        shippingAddress: { fullName: 'Aisha Patel', address: '789 Design Blvd', city: 'Bangalore', state: 'KA', postalCode: '560001', country: 'India' }
+      },
+      {
+        user: users[3]._id, design: designs[3]._id, product: tShirtProduct._id, quantity: 1, selectedMaterial: 'cotton', selectedSize: 'XL', selectedColor: 'Black',
+        pricing: { basePrice: 399, subtotal: 399, total: 499 }, isPaid: true, paidAt: new Date(Date.now() - 2*24*60*60*1000), status: 'paid', refundEligible: false,
+        shippingAddress: { fullName: 'James Wu', address: '101 Code Ave', city: 'Pune', state: 'MH', postalCode: '411001', country: 'India' }
+      },
+      {
+        user: users[4]._id, design: designs[4]._id, product: canvasProduct._id, quantity: 1, selectedMaterial: 'canvas', selectedSize: '16×20"', selectedColor: 'Standard',
+        pricing: { basePrice: 899, subtotal: 899, total: 999 }, isPaid: true, paidAt: new Date(Date.now() - 1*24*60*60*1000), status: 'paid', refundEligible: false,
+        shippingAddress: { fullName: 'Elena Rostova', address: '202 Moscow St', city: 'Kolkata', state: 'WB', postalCode: '700001', country: 'India' }
+      }
+    ];
+
+    const orders = [];
+    for (const o of ordersData) {
+      const order = await Order.create(o);
+      orders.push(order);
+    }
+
+    // 5. Create Posts
+    const postsData = [
+      { user: users[0]._id, order: orders[0]._id, design: designs[0]._id, images: [{ url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600' }], caption: 'Designed this sweet Cyberpunk Hoodie on CustomFlex! Super comfy and the printing is high quality. Let me know what you think!', category: 'clothing', likesCount: 847, commentsCount: 12, isPublic: true, isFeatured: true },
+      { user: users[1]._id, order: orders[1]._id, design: designs[1]._id, images: [{ url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600' }], caption: 'Just received my custom Line Art Tee! Simple but premium. High quality combed ringspun cotton.', category: 'clothing', likesCount: 520, commentsCount: 5, isPublic: true, isFeatured: true },
+      { user: users[2]._id, order: orders[2]._id, design: designs[2]._id, images: [{ url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600' }], caption: 'My new Stretched Canvas Print looks stunning on the bedroom wall! Turned my design into real gallery art.', category: 'artwork', likesCount: 310, commentsCount: 8, isPublic: true, isFeatured: true },
+      { user: users[3]._id, order: orders[3]._id, design: designs[3]._id, images: [{ url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600' }], caption: 'Retro Vaporwave vibes for this custom tee. The colors are incredibly vibrant.', category: 'clothing', likesCount: 145, commentsCount: 3, isPublic: true, isFeatured: false },
+      { user: users[4]._id, order: orders[4]._id, design: designs[4]._id, images: [{ url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600' }], caption: 'My custom wall print is finally here. Minimalist mountains.', category: 'artwork', likesCount: 95, commentsCount: 4, isPublic: true, isFeatured: false },
+    ];
+
+    const posts = await Post.insertMany(postsData);
+
+    // 6. Create Comments
+    const commentsData = [
+      { user: users[0]._id, post: posts[0]._id, text: 'CustomFlex is insane. I designed a hoodie, shared it, got 500 likes and got my money back in a week. This is the future!' },
+      { user: users[1]._id, post: posts[0]._id, text: 'The design studio is on par with Figma for product design. The canvas tools saved me hours of work.' },
+      { user: users[2]._id, post: posts[0]._id, text: 'I love how my designs can earn me rewards. It gamifies creativity in the most addictive way.' },
+      { user: users[3]._id, post: posts[0]._id, text: 'Best custom product platform I\'ve used. The UI is stunning and everything just works smoothly.' },
+      { user: users[4]._id, post: posts[0]._id, text: 'The canvas editor is so smooth. Adding shapes and text is super simple. 10/10 recommend!' }
+    ];
+
+    await Comment.insertMany(commentsData);
+
+    // 7. Create Refunds (Rewards)
+    const refundsData = [
+      { order: orders[0]._id, user: users[0]._id, post: posts[0]._id, design: designs[0]._id, amount: 899, status: 'processed', eligibilityReason: { likesCount: 847, requiredLikes: 750, uniquePurchasers: 3, requiredPurchasers: 2 }, processedAt: new Date(Date.now() - 2*60*60*1000) },
+      { order: orders[1]._id, user: users[1]._id, post: posts[1]._id, design: designs[1]._id, amount: 499, status: 'processed', eligibilityReason: { likesCount: 520, requiredLikes: 500, uniquePurchasers: 2, requiredPurchasers: 2 }, processedAt: new Date(Date.now() - 5*60*60*1000) },
+      { order: orders[2]._id, user: users[2]._id, post: posts[2]._id, design: designs[2]._id, amount: 999, status: 'processed', eligibilityReason: { likesCount: 310, requiredLikes: 300, uniquePurchasers: 2, requiredPurchasers: 2 }, processedAt: new Date(Date.now() - 24*60*60*1000) }
+    ];
+
+    await Refund.insertMany(refundsData);
+    console.log('🌱 Seeded users, posts, comments, orders, and refunds for a fully populated dynamic community feed!');
+
+  } catch (error) {
+    console.error('❌ Community seeding failed:', error.message);
+  }
+};
+
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
@@ -462,6 +588,7 @@ const connectDB = async () => {
     });
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     await seedProducts();
+    await seedCommunityData();
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
     process.exit(1);

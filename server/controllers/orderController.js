@@ -290,6 +290,52 @@ exports.getPublicStats = async (req, res, next) => {
     const refunds = await Refund.find({ status: { $in: ['approved', 'processed'] } });
     const totalRewards = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
 
+    // Fetch last 5 processed refunds
+    const recentRefunds = await Refund.find({ status: 'processed' })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('user', 'name avatar');
+
+    const recentRewards = recentRefunds.map(r => ({
+      user: r.user ? r.user.name : 'Creator',
+      avatar: r.user ? r.user.avatar : '',
+      amount: `₹${r.amount}`,
+      time: r.createdAt
+    }));
+
+    // Fetch comments to show as testimonials
+    const Comment = require('../models/Comment');
+    const comments = await Comment.find()
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .populate('user', 'name avatar');
+
+    const testimonials = comments.map(c => ({
+      name: c.user ? c.user.name : 'Creator',
+      handle: `@${c.user ? c.user.name.replace(/\s+/g, '').toLowerCase() : 'creator'}`,
+      text: c.text,
+      rating: 5
+    }));
+
+    // Fetch top featured post for the status card
+    const Post = require('../models/Post');
+    const featuredPost = await Post.findOne({ isFeatured: true })
+      .sort({ likesCount: -1 })
+      .populate('design', 'title')
+      .populate('order', 'pricing');
+
+    let featuredReward = null;
+    if (featuredPost) {
+      featuredReward = {
+        title: featuredPost.design ? featuredPost.design.title : 'Custom Hoodie Design',
+        likes: featuredPost.likesCount || 0,
+        requiredLikes: 750,
+        buyers: 3,
+        requiredBuyers: 2,
+        amount: featuredPost.order && featuredPost.order.pricing ? `₹${featuredPost.order.pricing.total}` : '₹4,250'
+      };
+    }
+
     res.status(200).json({
       success: true,
       stats: {
@@ -297,6 +343,9 @@ exports.getPublicStats = async (req, res, next) => {
         totalDesigns,
         totalOrders,
         totalRewards,
+        recentRewards,
+        testimonials,
+        featuredReward
       }
     });
   } catch (error) {

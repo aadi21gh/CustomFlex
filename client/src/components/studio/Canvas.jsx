@@ -53,19 +53,19 @@ const StudioCanvas = ({ category }) => {
       backgroundColor: '#ffffff',
       preserveObjectStacking: true,
       selection: true,
-      selectionColor: 'rgba(99, 102, 241, 0.1)',
-      selectionBorderColor: '#6366f1',
+      selectionColor: 'rgba(199, 109, 74, 0.1)',
+      selectionBorderColor: '#C76D4A',
       selectionLineWidth: 1,
       controlsAboveOverlay: true,
     });
 
     // Custom control style
     fabric.Object.prototype.set({
-      cornerColor: '#6366f1',
+      cornerColor: '#C76D4A',
       cornerStyle: 'circle',
       cornerSize: 8,
       transparentCorners: false,
-      borderColor: '#6366f1',
+      borderColor: '#C76D4A',
       borderScaleFactor: 1.5,
     });
 

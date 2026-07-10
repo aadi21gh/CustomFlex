@@ -14,8 +14,8 @@ const FONT_FAMILIES = [
 const BLEND_MODES = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'difference', 'exclusion'];
 
 const PRESET_PALETTE = [
-  '#ffffff', '#000000', '#6366f1', '#3b82f6', '#06b6d4',
-  '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6',
+  '#F7F3EB', '#5B4636', '#C76D4A', '#8A9A7B', '#E7B8A4',
+  '#D89377', '#B2C0A5', '#DFD8C9', '#EFEAE0', '#000000',
 ];
 
 const PropertiesPanel = () => {
@@ -23,7 +23,7 @@ const PropertiesPanel = () => {
   const canvas = () => fabricRef.current;
 
   const [props, setProps] = useState({
-    fill: '#6366f1',
+    fill: '#C76D4A',
     stroke: '',
     strokeWidth: 0,
     opacity: 1,
@@ -53,7 +53,7 @@ const PropertiesPanel = () => {
   useEffect(() => {
     if (!activeObject) return;
     setProps({
-      fill: activeObject.fill || '#6366f1',
+      fill: activeObject.fill || '#C76D4A',
       stroke: activeObject.stroke || '',
       strokeWidth: activeObject.strokeWidth || 0,
       opacity: activeObject.opacity ?? 1,
@@ -182,7 +182,7 @@ const PropertiesPanel = () => {
           <div className="space-y-2">
             <PropRow label="Fill Color">
               <div className="flex gap-2">
-                <input type="color" value={typeof props.fill === 'string' && props.fill.startsWith('#') ? props.fill : '#6366f1'}
+                <input type="color" value={typeof props.fill === 'string' && props.fill.startsWith('#') ? props.fill : '#C76D4A'}
                   onChange={(e) => applyWithHistory('fill', e.target.value)}
                   className="w-10 h-8 rounded-lg cursor-pointer bg-transparent border border-glass-border overflow-hidden"
                 />

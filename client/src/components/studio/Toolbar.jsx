@@ -10,8 +10,8 @@ import toast from 'react-hot-toast';
 
 /* ─── Quick color swatches ─────────────────────────────────────────────────── */
 const QUICK_COLORS = [
-  '#ffffff', '#1a1a2e', '#6366f1', '#8b5cf6', '#ec4899',
-  '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#64748b',
+  '#F7F3EB', '#5B4636', '#C76D4A', '#8A9A7B', '#E7B8A4',
+  '#D89377', '#B2C0A5', '#DFD8C9', '#EFEAE0', '#000000',
 ];
 
 /* ─── Clipboard (module-level, persists across renders) ─────────────────────── */
@@ -30,7 +30,7 @@ const StudioToolbar = () => {
     const text = new fabric.IText('Click to edit text', {
       left: 120, top: 120,
       fontSize: 32,
-      fill: '#ffffff',
+      fill: '#5B4636',
       fontFamily: 'Inter',
       fontWeight: '600',
       id: `text_${Date.now()}`,
@@ -50,7 +50,7 @@ const StudioToolbar = () => {
     if (!canvas()) return;
     const opts = {
       left: 150, top: 150,
-      fill: '#6366f1',
+      fill: '#C76D4A',
       id: `${type}_${Date.now()}`,
       customName: `${type.charAt(0).toUpperCase() + type.slice(1)}`,
     };
@@ -68,7 +68,7 @@ const StudioToolbar = () => {
         break;
       case 'line':
         shape = new fabric.Line([50, 100, 250, 100], {
-          ...opts, stroke: '#6366f1', strokeWidth: 3, fill: '',
+          ...opts, stroke: '#C76D4A', strokeWidth: 3, fill: '',
         });
         break;
       case 'star': {

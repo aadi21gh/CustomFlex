@@ -6,10 +6,10 @@ import {
 } from 'lucide-react';
 
 const SHAPES = [
-  { name: 'Rectangle', icon: Square, create: (canvas) => new fabric.Rect({ width: 120, height: 80, fill: '#6366f1', rx: 8 }) },
-  { name: 'Circle', icon: Circle, create: (canvas) => new fabric.Circle({ radius: 60, fill: '#8b5cf6' }) },
-  { name: 'Triangle', icon: Triangle, create: (canvas) => new fabric.Triangle({ width: 100, height: 90, fill: '#ec4899' }) },
-  { name: 'Line', icon: Minus, create: () => new fabric.Line([0, 0, 150, 0], { stroke: '#6366f1', strokeWidth: 3 }) },
+  { name: 'Rectangle', icon: Square, create: (canvas) => new fabric.Rect({ width: 120, height: 80, fill: '#C76D4A', rx: 8 }) },
+  { name: 'Circle', icon: Circle, create: (canvas) => new fabric.Circle({ radius: 60, fill: '#8A9A7B' }) },
+  { name: 'Triangle', icon: Triangle, create: (canvas) => new fabric.Triangle({ width: 100, height: 90, fill: '#5B4636' }) },
+  { name: 'Line', icon: Minus, create: () => new fabric.Line([0, 0, 150, 0], { stroke: '#C76D4A', strokeWidth: 3 }) },
   { name: 'Star', icon: Star, create: () => {
     const points = [];
     for (let i = 0; i < 10; i++) {
@@ -17,7 +17,7 @@ const SHAPES = [
       const a = (i * Math.PI) / 5 - Math.PI / 2;
       points.push({ x: r * Math.cos(a), y: r * Math.sin(a) });
     }
-    return new fabric.Polygon(points, { fill: '#f59e0b' });
+    return new fabric.Polygon(points, { fill: '#E7B8A4' });
   }},
   { name: 'Pentagon', icon: Hexagon, create: () => {
     const sides = 6;
@@ -25,27 +25,27 @@ const SHAPES = [
       const a = (2 * Math.PI * i) / sides - Math.PI / 2;
       return { x: 60 * Math.cos(a), y: 60 * Math.sin(a) };
     });
-    return new fabric.Polygon(points, { fill: '#10b981' });
+    return new fabric.Polygon(points, { fill: '#8A9A7B' });
   }},
   { name: 'Heart', icon: Heart, create: () => {
     const path = 'M 0,-30 C 0,-45 15,-60 30,-55 C 50,-50 55,-30 40,-10 L 0,20 L -40,-10 C -55,-30 -50,-50 -30,-55 C -15,-60 0,-45 0,-30 Z';
-    return new fabric.Path(path, { fill: '#ef4444' });
+    return new fabric.Path(path, { fill: '#B24C3D' });
   }},
 ];
 
 const COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b',
-  '#10b981', '#06b6d4', '#3b82f6', '#ffffff', '#1a1a2e',
-  '#e2e8f0', '#64748b', '#dc2626', '#7c3aed', '#0ea5e9',
+  '#C76D4A', '#8A9A7B', '#5B4636', '#B24C3D', '#E7B8A4',
+  '#D89377', '#B2C0A5', '#DFD8C9', '#EFEAE0', '#F7F3EB',
+  '#7A6C5C', '#5F4F40', '#3E2E22', '#000000', '#ffffff',
 ];
 
 const GRADIENTS = [
-  { name: 'Brand', colors: ['#6366f1', '#8b5cf6'] },
-  { name: 'Sunset', colors: ['#f59e0b', '#ef4444'] },
-  { name: 'Ocean', colors: ['#06b6d4', '#3b82f6'] },
-  { name: 'Forest', colors: ['#10b981', '#06b6d4'] },
-  { name: 'Rose', colors: ['#ec4899', '#ef4444'] },
-  { name: 'Cosmic', colors: ['#8b5cf6', '#ec4899'] },
+  { name: 'Warmth', colors: ['#C76D4A', '#8A9A7B'] },
+  { name: 'Studio', colors: ['#C76D4A', '#5B4636'] },
+  { name: 'Sage', colors: ['#8A9A7B', '#5B4636'] },
+  { name: 'Peach', colors: ['#E7B8A4', '#C76D4A'] },
+  { name: 'Earth', colors: ['#DFD8C9', '#7A6C5C'] },
+  { name: 'Creamy', colors: ['#F7F3EB', '#DFD8C9'] },
 ];
 
 const ShapeLibrary = () => {
@@ -150,7 +150,7 @@ const ShapeLibrary = () => {
               onClick={() => {
                 if (!canvas()) return;
                 const text = new fabric.IText(label, {
-                  fontSize: size, fontWeight: weight, fill: '#ffffff',
+                  fontSize: size, fontWeight: weight, fill: '#5B4636',
                   fontFamily: 'Inter', left: 80, top: 80,
                   id: `text_${Date.now()}`, customName: `${label} Text`,
                 });

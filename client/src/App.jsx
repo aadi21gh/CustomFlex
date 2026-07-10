@@ -81,18 +81,18 @@ const App = () => {
           toastOptions={{
             duration: 4000,
             style: {
-              background: 'rgba(15, 23, 42, 0.9)',
+              background: 'rgba(247, 243, 235, 0.95)',
               backdropFilter: 'blur(16px)',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#5B4636',
+              border: '1px solid rgba(91, 70, 54, 0.15)',
               borderRadius: '12px',
               fontFamily: 'Inter, sans-serif',
               fontSize: '14px',
             },
             success: {
               iconTheme: {
-                primary: '#6366f1',
-                secondary: '#fff',
+                primary: '#C76D4A',
+                secondary: '#F7F3EB',
               },
             },
           }}
