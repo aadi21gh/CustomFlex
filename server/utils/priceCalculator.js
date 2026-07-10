@@ -54,6 +54,8 @@ const MATERIAL_OPTIONS = {
   'oversized-cotton': { label: 'Oversized Cotton', addOn: 80, description: 'Relaxed fit 220 GSM' },
   'dry-fit':        { label: 'Dry Fit',          addOn: 150,  description: 'Moisture-wicking polyester' },
   polyester:        { label: 'Polyester',        addOn: 60,   description: 'Durable synthetic blend' },
+  silk:             { label: 'Silk',             addOn: 300,  description: 'Pure 100% mulberry silk' },
+  linen:            { label: 'Linen',            addOn: 150,  description: 'Premium lightweight breathable linen' },
 
   // Artwork materials
   'matte-paper':    { label: 'Matte Paper',      addOn: 0,    description: 'Standard 250 GSM matte' },
@@ -74,22 +76,20 @@ const MATERIAL_OPTIONS = {
 
 /* ─── Design Charges (INR) — flat fee per print area ───────────────────────── */
 const DESIGN_CHARGES = {
-  front:       199,
-  back:        199,
-  'front-back':349,
-  'left-sleeve':249,
-  'right-sleeve':249,
-  'all-over':  599,
-  full:        399,
+  front:       0,
+  back:        0,
+  'front-back':0,
+  'left-sleeve':0,
+  'right-sleeve':0,
+  'all-over':  0,
+  full:        0,
   // Artwork / single-area products
-  standard:    149,
+  standard:    0,
 };
 
 /* ─── Delivery Options (INR) ─────────────────────────────────────────────────── */
 const DELIVERY_OPTIONS = {
-  standard: { label: 'Standard Delivery', price: 99,  days: '7-10 business days' },
-  express:  { label: 'Express Delivery',  price: 199, days: '3-5 business days' },
-  overnight:{ label: 'Priority Delivery', price: 349, days: '1-2 business days' },
+  standard: { label: 'Standard Shipping', price: 99,  days: '2-3 weeks' },
 };
 
 /* ─── Default material per category ─────────────────────────────────────────── */
@@ -215,7 +215,7 @@ const getAvailableOptions = () => ({
     description: data.description,
   })),
   materialsByCategory: {
-    clothing:    ['cotton', 'premium-cotton', 'organic-cotton', 'oversized-cotton', 'dry-fit', 'polyester'],
+    clothing:    ['cotton', 'premium-cotton', 'organic-cotton', 'oversized-cotton', 'dry-fit', 'polyester', 'silk', 'linen'],
     artwork:     ['matte-paper', 'glossy-paper', 'canvas', 'acrylic', 'wood', 'metal'],
     accessories: ['standard', 'premium', 'silicone', 'hard-plastic', 'leather', 'stainless-steel'],
   },

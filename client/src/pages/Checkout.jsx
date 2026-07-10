@@ -15,9 +15,7 @@ import toast from 'react-hot-toast';
 
 /* ─── Static delivery options (mirrors backend) ─────────────────────────────── */
 const DELIVERY_OPTIONS = [
-  { id: 'standard', label: 'Standard Delivery', price: 99,  days: '7-10 business days', icon: '📦' },
-  { id: 'express',  label: 'Express Delivery',  price: 199, days: '3-5 business days',  icon: '⚡' },
-  { id: 'overnight',label: 'Priority Delivery', price: 349, days: '1-2 business days',  icon: '🚀' },
+  { id: 'standard', label: 'Standard Shipping', price: 99,  days: '2-3 weeks', icon: '📦' },
 ];
 
 /* ─── Material options per category (mirrors backend MATERIAL_OPTIONS) ───────── */
@@ -29,6 +27,8 @@ const MATERIALS_BY_CATEGORY = {
     { id: 'oversized-cotton', label: 'Oversized Cotton', addOn: 80,  description: 'Relaxed fit 220 GSM' },
     { id: 'dry-fit',          label: 'Dry Fit',          addOn: 150, description: 'Moisture-wicking polyester' },
     { id: 'polyester',        label: 'Polyester',        addOn: 60,  description: 'Durable synthetic blend' },
+    { id: 'silk',             label: 'Silk',             addOn: 300, description: 'Pure 100% mulberry silk' },
+    { id: 'linen',            label: 'Linen',            addOn: 150, description: 'Lightweight breathable linen' },
   ],
   artwork: [
     { id: 'matte-paper',  label: 'Matte Paper',   addOn: 0,   description: 'Standard 250 GSM matte' },
@@ -98,12 +98,6 @@ const PriceBreakdown = ({ pricing, isLoading }) => {
       icon: <Palette className="w-3.5 h-3.5" />,
       color: pricing.materialPrice > 0 ? 'text-blue-400' : 'text-dark-400',
       sub: pricing.materialDescription,
-    },
-    {
-      label: `Design Charge (${pricing.printAreaLabel || 'Standard'})`,
-      value: `+${formatPrice(pricing.designCharge)}`,
-      icon: <Tag className="w-3.5 h-3.5" />,
-      color: 'text-purple-400',
     },
     {
       label: pricing.deliveryLabel || 'Delivery',
@@ -498,12 +492,6 @@ const Checkout = () => {
                 category={category}
                 value={options.material}
                 onChange={(v) => setOptions((o) => ({ ...o, material: v }))}
-              />
-
-              <PrintAreaSelector
-                category={category}
-                value={options.printArea}
-                onChange={(v) => setOptions((o) => ({ ...o, printArea: v }))}
               />
 
               {/* Size picker */}

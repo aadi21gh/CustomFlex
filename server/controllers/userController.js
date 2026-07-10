@@ -13,7 +13,7 @@ const cloudinary = require('../config/cloudinary');
 exports.getUserProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('-password -resetPasswordToken -resetPasswordExpire -emailVerificationToken');
+      .select('name bio avatar followers following isActive');
 
     if (!user || !user.isActive) {
       return res.status(404).json({ success: false, message: 'User not found' });
