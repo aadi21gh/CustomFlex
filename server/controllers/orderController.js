@@ -3,6 +3,8 @@ const Order = require('../models/Order');
 const Design = require('../models/Design');
 const Product = require('../models/Product');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
+const Refund = require('../models/Refund');
 const { calculatePrice } = require('../utils/priceCalculator');
 
 // @desc    Calculate price (transparent pricing engine — no AI)
@@ -270,6 +272,33 @@ exports.confirmPayment = async (req, res, next) => {
     }
 
     res.status(200).json({ success: true, order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get public statistics
+// @route   GET /api/orders/public-stats
+// @access  Public
+exports.getPublicStats = async (req, res, next) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalDesigns = await Design.countDocuments();
+    const totalOrders = await Order.countDocuments({ isPaid: true });
+
+    // Sum of processed/approved refunds
+    const refunds = await Refund.find({ status: { $in: ['approved', 'processed'] } });
+    const totalRewards = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalDesigns,
+        totalOrders,
+        totalRewards,
+      }
+    });
   } catch (error) {
     next(error);
   }

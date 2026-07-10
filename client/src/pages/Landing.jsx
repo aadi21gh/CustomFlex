@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import api from '@/lib/axios';
+import { formatPrice } from '@/lib/utils';
 
 /* ─── Animation Variants ───────────────────────────────────────────────────── */
 const fadeUp = {
@@ -262,6 +264,23 @@ const Landing = () => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalDesigns: 0,
+    totalOrders: 0,
+    totalRewards: 0,
+  });
+
+  useEffect(() => {
+    api.get('/orders/public-stats')
+      .then(({ data }) => {
+        if (data.success && data.stats) {
+          setStats(data.stats);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Scroll parallax
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
@@ -457,7 +476,7 @@ const Landing = () => {
               ))}
             </div>
             <p className="text-sm text-dark-400">
-              Trusted by <span className="text-white font-semibold">50,000+</span> creators worldwide
+              Trusted by <span className="text-white font-semibold">{stats.totalUsers}+</span> creators worldwide
             </p>
           </motion.div>
 
@@ -490,10 +509,10 @@ const Landing = () => {
             viewport={{ once: true, amount: 0.3 }}
             variants={{ visible: { transition: { staggerChildren: 0.1 } }, hidden: {} }}
           >
-            <StatCard value="50K+" label="Active Creators" icon={Users} />
-            <StatCard value="200K+" label="Designs Created" icon={Palette} />
-            <StatCard value="₹2Cr+" label="Rewards Paid Out" icon={TrendingUp} />
-            <StatCard value="4.9★" label="Average Rating" icon={Star} />
+            <StatCard value={stats.totalUsers.toLocaleString()} label="Active Creators" icon={Users} />
+            <StatCard value={stats.totalDesigns.toLocaleString()} label="Designs Created" icon={Palette} />
+            <StatCard value={formatPrice(stats.totalRewards)} label="Rewards Paid Out" icon={TrendingUp} />
+            <StatCard value={stats.totalOrders.toLocaleString()} label="Orders Placed" icon={ShoppingBag} />
           </motion.div>
         </div>
       </section>
