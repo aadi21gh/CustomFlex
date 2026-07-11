@@ -4,6 +4,7 @@ const {
   getStats, getUsers, toggleUserActive, getOrders, updateOrderStatus,
   getRefunds, processRefund, getPosts, toggleFeaturePost,
   getRewardConfig, updateRewardConfig, triggerRewardCheck,
+  getDesigns,
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/auth');
 const { adminOnly } = require('../middleware/admin');
@@ -34,5 +35,8 @@ router.post('/reward-config/run-check', triggerRewardCheck);
 /* ── Posts ───────────────────────────────────────────────────────────────── */
 router.get('/posts', getPosts);
 router.put('/posts/:id/feature', toggleFeaturePost);
+
+/* ── Designs ─────────────────────────────────────────────────────────────── */
+router.get('/designs', getDesigns);
 
 module.exports = router;

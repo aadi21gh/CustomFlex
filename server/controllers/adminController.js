@@ -427,3 +427,31 @@ exports.toggleFeaturePost = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get all designs (admin)
+// @route   GET /api/admin/designs
+// @access  Admin
+exports.getDesigns = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const [designs, total] = await Promise.all([
+      Design.find()
+        .populate('user', 'name email avatar')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Design.countDocuments(),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      designs,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Shield, Users, ShoppingBag, RefreshCw, BarChart2,
   CheckCircle2, XCircle, Search, Edit2, Loader2, ArrowRight,
-  TrendingUp, Clock, Truck, Trophy,
+  TrendingUp, Clock, Truck, Trophy, Palette,
 } from 'lucide-react';
 import RewardConfigPanel from './RewardConfig';
 import Navbar from '@/components/layout/Navbar';
@@ -17,6 +17,7 @@ const TABS = [
   { id: 'stats', label: 'Stats & Revenue', icon: BarChart2 },
   { id: 'users', label: 'Users Manager', icon: Users },
   { id: 'orders', label: 'Orders Manager', icon: ShoppingBag },
+  { id: 'designs', label: 'Designs Manager', icon: Palette },
   { id: 'refunds', label: 'Reward Requests', icon: RefreshCw },
   { id: 'reward-config', label: 'Reward Config', icon: Trophy },
 ];
@@ -31,6 +32,7 @@ const AdminPanel = () => {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [designs, setDesigns] = useState([]);
   const [refunds, setRefunds] = useState([]);
 
   // Sub-actions states
@@ -61,6 +63,9 @@ const AdminPanel = () => {
       } else if (activeTab === 'refunds') {
         const { data } = await api.get('/admin/refunds');
         setRefunds(data.refunds);
+      } else if (activeTab === 'designs') {
+        const { data } = await api.get('/admin/designs');
+        setDesigns(data.designs);
       }
     } catch {
       toast.error('Failed to load admin data');
@@ -331,6 +336,51 @@ const AdminPanel = () => {
                 ))}
                 {refunds.length === 0 && (
                   <p className="text-center py-10 text-dark-400">No reward requests pending</p>
+                )}
+              </div>
+            )}
+
+            {/* Designs Tab */}
+            {activeTab === 'designs' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {designs.map((d) => (
+                  <div key={d._id} className="glass-card overflow-hidden flex flex-col justify-between h-full hover:border-purple-500/40 transition-colors">
+                    <div>
+                      <div className="aspect-[4/3] bg-dark-800 relative flex items-center justify-center border-b border-glass-border overflow-hidden group">
+                        {d.thumbnail?.url ? (
+                          <img src={d.thumbnail.url} alt={d.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        ) : (
+                          <div className="text-dark-500 text-sm font-medium">No Preview</div>
+                        )}
+                        <span className="absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-dark-900/80 border-glass-border text-dark-200 capitalize">
+                          {d.category}
+                        </span>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="font-semibold text-white truncate text-base" title={d.title}>{d.title}</h4>
+                        <p className="text-xs text-dark-400 mt-2 truncate">
+                          Owner: <span className="text-white font-medium">{d.user?.name || 'Unknown'}</span>
+                        </p>
+                        <p className="text-[11px] text-dark-500 truncate mt-0.5">
+                          {d.user?.email || 'N/A'}
+                        </p>
+                        <p className="text-[11px] text-dark-500 mt-2">
+                          Created: {formatDate(d.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-4 pt-0 border-t border-glass-border/30 flex items-center justify-between mt-4">
+                      <span className="text-xs font-semibold text-brand-400">
+                        Purchases: {d.purchaseCount || 0}
+                      </span>
+                      <a href={`/studio/${d.category}/${d._id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1 !px-2.5 text-xs flex items-center gap-1">
+                        View Studio <ArrowRight className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+                {designs.length === 0 && (
+                  <p className="col-span-full text-center py-10 text-dark-400">No user designs found</p>
                 )}
               </div>
             )}
