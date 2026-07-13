@@ -10,6 +10,8 @@ const StudioCanvas = ({ category }) => {
   const {
     fabricRef, setActiveObject, syncLayers, pushHistory,
     gridVisible, snapToGrid, zoom,
+    selectedTool, setSelectedTool,
+    brushColor, brushWidth, brushType,
   } = useStudio();
 
   const dims = CANVAS_DIMENSIONS[category] || CANVAS_DIMENSIONS.artwork;
@@ -77,7 +79,17 @@ const StudioCanvas = ({ category }) => {
     canvas.on('selection:cleared', () => setActiveObject(null));
 
     canvas.on('object:modified', () => { pushHistory(); syncLayers(); });
-    canvas.on('object:added', () => { syncLayers(); pushHistory(); });
+    canvas.on('object:added', (e) => {
+      const obj = e?.target;
+      if (obj && obj.type === 'path' && !obj.id) {
+        obj.set({
+          id: `path_${Date.now()}`,
+          customName: 'Brush Stroke',
+        });
+      }
+      syncLayers();
+      pushHistory();
+    });
     canvas.on('object:removed', () => { syncLayers(); pushHistory(); });
 
     // Snap to grid
@@ -135,6 +147,32 @@ const StudioCanvas = ({ category }) => {
       canvas.dispose();
     };
   }, [category]);
+
+  // Handle Brush/Draw mode settings
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    if (selectedTool === 'draw') {
+      canvas.isDrawingMode = true;
+
+      // Select brush type
+      if (brushType === 'spray') {
+        canvas.freeDrawingBrush = new fabric.SprayBrush(canvas);
+      } else if (brushType === 'circle') {
+        canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);
+      } else {
+        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+      }
+
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.color = brushColor;
+        canvas.freeDrawingBrush.width = brushWidth;
+      }
+    } else {
+      canvas.isDrawingMode = false;
+    }
+  }, [selectedTool, brushColor, brushWidth, brushType, fabricRef.current]);
 
   // Grid overlay
   useEffect(() => {

@@ -13,6 +13,7 @@ import StudioCanvas from '@/components/studio/Canvas';
 import LayersPanel from '@/components/studio/LayersPanel';
 import PropertiesPanel from '@/components/studio/PropertiesPanel';
 import ShapeLibrary from '@/components/studio/ShapeLibrary';
+import StickerLibrary from '@/components/studio/StickerLibrary';
 import AIImageGenerator from '@/components/studio/AIImageGenerator';
 import ProductPreview from '@/components/studio/ProductPreview';
 import api from '@/lib/axios';
@@ -249,9 +250,9 @@ const StudioContent = ({ category, designId: editId }) => {
   return (
     <div className="h-screen bg-dark-950 flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <div className="h-14 flex-shrink-0 flex items-center gap-4 px-4 border-b border-glass-border bg-dark-900/80 backdrop-blur-xl">
+      <div className="h-14 flex-shrink-0 flex items-center gap-2 sm:gap-4 px-2.5 sm:px-4 border-b border-glass-border bg-dark-900/80 backdrop-blur-xl">
         {/* Left */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-1 sm:flex-initial min-w-0">
           <button onClick={() => navigate(-1)} className="toolbar-btn animate-fadeIn" title="Go back">
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -265,12 +266,12 @@ const StudioContent = ({ category, designId: editId }) => {
           >
             <Palette className="w-4 h-4" />
           </button>
-          <div className="w-px h-5 bg-glass-border" />
+          <div className="w-px h-5 bg-glass-border hidden sm:block" />
           {/* Editable title */}
           <input
             value={designTitle}
             onChange={(e) => setDesignTitle(e.target.value)}
-            className="bg-transparent text-xs sm:text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-glass-border focus:border-brand-500 transition-colors px-1 py-0.5 max-w-[100px] sm:max-w-xs"
+            className="bg-transparent text-xs sm:text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-glass-border focus:border-brand-500 transition-colors px-1 py-0.5 max-w-[100px] sm:max-w-xs hidden sm:block"
             id="design-title-input"
           />
           
@@ -298,15 +299,20 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
 
         {/* Center — History & Zoom */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button onClick={undo} disabled={!canUndo} className="toolbar-btn disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
           <button onClick={redo} disabled={!canRedo} className="toolbar-btn disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
-          <div className="w-px h-5 bg-glass-border mx-1" />
-          <button onClick={() => handleZoom('out')} className="toolbar-btn" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
-          <span className="text-xs text-dark-300 w-10 text-center font-mono cursor-pointer hover:text-white transition-colors" title="Zoom to Fit" onClick={handleZoomToFit}>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button onClick={() => handleZoom('in')} className="toolbar-btn" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
+          
+          {/* Zoom controls hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1">
+            <div className="w-px h-5 bg-glass-border mx-1" />
+            <button onClick={() => handleZoom('out')} className="toolbar-btn" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
+            <span className="text-xs text-dark-300 w-10 text-center font-mono cursor-pointer hover:text-white transition-colors" title="Zoom to Fit" onClick={handleZoomToFit}>
+              {Math.round(zoom * 100)}%
+            </span>
+            <button onClick={() => handleZoom('in')} className="toolbar-btn" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
+          </div>
+
           <div className="w-px h-5 bg-glass-border mx-1 hidden sm:block" />
           <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''} hidden sm:flex`} title="Toggle grid">
             <Grid3X3 className="w-4 h-4" />
@@ -317,7 +323,7 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
 
         {/* Right — Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end">
+        <div className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-end min-w-0">
           <button
             onClick={() => {
               setShowRightPanel(!showRightPanel);
@@ -332,39 +338,50 @@ const StudioContent = ({ category, designId: editId }) => {
             <Save className="w-3.5 h-3.5" />
             Draft
           </button>
-          <button onClick={handleExport} className="toolbar-btn text-xs gap-1.5 px-2.5 sm:px-3 !w-auto" title="Export PNG">
+          <button onClick={handleExport} className="toolbar-btn text-xs gap-1.5 px-2.5 sm:px-3 !w-auto hidden sm:flex" title="Export PNG">
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Export</span>
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white transition-all bg-white/5 border border-glass-border hover:bg-white/10"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold text-white transition-all bg-white/5 border border-glass-border hover:bg-white/10"
             title="Save design"
           >
             {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Save</span>
+            <span>Save</span>
           </button>
           <button
             onClick={handleCheckout}
             disabled={isSaving}
-            className="btn-primary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-xs sm:text-sm animate-pulse"
+            className="btn-primary !py-1.5 !px-2 sm:!py-2 sm:!px-4 text-xs flex items-center gap-1 sm:gap-1.5 animate-pulse"
             id="studio-checkout-btn"
           >
             <ShoppingCart className="w-3.5 h-3.5" />
-            Order
+            <span>Order</span>
           </button>
         </div>
       </div>
 
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden relative">
+        {/* Tap-to-close backdrop overlay for mobile view drawers */}
+        {(showLeftPanel || showRightPanel) && (
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs z-10 md:hidden animate-fadeIn"
+            onClick={() => {
+              setShowLeftPanel(false);
+              setShowRightPanel(false);
+            }}
+          />
+        )}
         {/* Left Panel */}
         <div className={`w-64 flex-shrink-0 flex flex-col border-r border-glass-border bg-dark-950/95 fixed md:relative z-20 top-14 md:top-0 bottom-0 left-0 transition-transform duration-300 md:translate-x-0 ${showLeftPanel ? 'translate-x-0' : '-translate-x-full'}`}>
           {/* Tab switcher */}
           <div className="flex border-b border-glass-border">
             {[
               { id: 'shapes', label: 'Elements' },
+              { id: 'stickers', label: 'Stickers' },
               { id: 'ai', label: 'AI Art' },
             ].map(({ id, label }) => (
               <button
@@ -377,7 +394,13 @@ const StudioContent = ({ category, designId: editId }) => {
             ))}
           </div>
           <div className="flex-1 overflow-y-auto">
-            {leftPanel === 'shapes' ? <ShapeLibrary /> : <AIImageGenerator />}
+            {leftPanel === 'shapes' ? (
+              <ShapeLibrary />
+            ) : leftPanel === 'stickers' ? (
+              <StickerLibrary />
+            ) : (
+              <AIImageGenerator />
+            )}
           </div>
         </div>
 

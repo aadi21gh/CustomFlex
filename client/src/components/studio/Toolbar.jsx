@@ -4,6 +4,7 @@ import {
   Type, Square, Circle, Triangle, Minus, Star, Image as ImageIcon,
   MousePointer, Copy, Clipboard, Trash2, AlignCenter,
   ArrowUp, ArrowDown, FlipHorizontal, FlipVertical, Lock, Unlock,
+  Brush,
 } from 'lucide-react';
 import { useStudio } from '@/context/StudioContext';
 import toast from 'react-hot-toast';
@@ -18,7 +19,10 @@ const QUICK_COLORS = [
 let _clipboard = null;
 
 const StudioToolbar = () => {
-  const { fabricRef, selectedTool, setSelectedTool, syncLayers, pushHistory } = useStudio();
+  const {
+    fabricRef, selectedTool, setSelectedTool, syncLayers, pushHistory,
+    brushColor, setBrushColor,
+  } = useStudio();
   const fileRef = useRef(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -122,6 +126,10 @@ const StudioToolbar = () => {
 
   /* ── Apply quick color to active object ── */
   const applyQuickColor = (color) => {
+    if (selectedTool === 'draw') {
+      setBrushColor(color);
+      return;
+    }
     const obj = canvas()?.getActiveObject();
     if (!obj) return;
     obj.set('fill', color);
@@ -138,6 +146,14 @@ const StudioToolbar = () => {
     { id: 'line', icon: Minus, label: 'Line (L)', action: () => addShape('line') },
     { id: 'star', icon: Star, label: 'Star', action: () => addShape('star') },
     { id: 'image', icon: ImageIcon, label: 'Upload Image (I)', action: () => fileRef.current?.click() },
+    { id: 'draw', icon: Brush, label: 'Brush (B)', action: () => {
+      const c = canvas();
+      if (c) {
+        c.discardActiveObject();
+        c.renderAll();
+      }
+      setSelectedTool('draw');
+    } },
   ];
 
   return (

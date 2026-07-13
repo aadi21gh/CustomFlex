@@ -18,6 +18,9 @@ export const StudioProvider = ({ children }) => {
   const [gridVisible, setGridVisible] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [selectedTool, setSelectedTool] = useState('select');
+  const [brushColor, setBrushColor] = useState('#C76D4A');
+  const [brushWidth, setBrushWidth] = useState(10);
+  const [brushType, setBrushType] = useState('pencil');
 
   const canvas = useCallback(() => fabricRef.current, []);
 
@@ -145,6 +148,12 @@ export const StudioProvider = ({ children }) => {
     setSnapToGrid,
     selectedTool,
     setSelectedTool,
+    brushColor,
+    setBrushColor,
+    brushWidth,
+    setBrushWidth,
+    brushType,
+    setBrushType,
     canUndo: historyIndex > 0,
     canRedo: historyIndex < history.length - 1,
   };

@@ -19,7 +19,13 @@ const PRESET_PALETTE = [
 ];
 
 const PropertiesPanel = () => {
-  const { activeObject, fabricRef, pushHistory } = useStudio();
+  const {
+    activeObject, fabricRef, pushHistory,
+    selectedTool, setSelectedTool,
+    brushColor, setBrushColor,
+    brushWidth, setBrushWidth,
+    brushType, setBrushType,
+  } = useStudio();
   const canvas = () => fabricRef.current;
 
   const [props, setProps] = useState({
@@ -114,14 +120,7 @@ const PropertiesPanel = () => {
   const isRect = activeObject?.type === 'rect';
   const isImage = activeObject?.type === 'image';
 
-  if (!activeObject) {
-    return (
-      <div className="flex flex-col items-center justify-center p-6 text-center text-dark-500 h-full">
-        <Sliders className="w-8 h-8 mb-3 text-dark-600 animate-pulse" />
-        <p className="text-xs">Select an object to edit its properties</p>
-      </div>
-    );
-  }
+  // Selected object check moved below helper definitions to reuse them
 
   const Section = ({ title, children }) => (
     <div className="border-b border-glass-border last:border-0">
@@ -136,6 +135,93 @@ const PropertiesPanel = () => {
       <div className="flex-1">{children}</div>
     </div>
   );
+
+  if (!activeObject) {
+    if (selectedTool === 'draw') {
+      return (
+        <div className="text-sm">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-glass-border bg-dark-900/20">
+            <Palette className="w-4 h-4 text-brand-400 animate-pulse" />
+            <span className="text-xs font-semibold text-white">Brush Properties</span>
+          </div>
+
+          <Section title="Brush Type">
+            <PropRow label="Style">
+              <select
+                value={brushType}
+                onChange={(e) => setBrushType(e.target.value)}
+                className="input-field !py-1.5 text-xs font-medium"
+              >
+                <option value="pencil">Pencil (Normal)</option>
+                <option value="spray">Spray</option>
+                <option value="circle">Circle</option>
+              </select>
+            </PropRow>
+          </Section>
+
+          <Section title="Size & Color">
+            <PropRow label="Size">
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={brushWidth}
+                  onChange={(e) => setBrushWidth(parseInt(e.target.value))}
+                  className="flex-1 accent-brand-500 h-1 bg-dark-800 rounded-lg appearance-none cursor-pointer"
+                />
+                <span className="text-xs text-dark-300 w-10 text-right font-mono">{brushWidth}px</span>
+              </div>
+            </PropRow>
+
+            <PropRow label="Brush Color">
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={brushColor}
+                  onChange={(e) => setBrushColor(e.target.value)}
+                  className="w-10 h-8 rounded-lg cursor-pointer bg-transparent border border-glass-border overflow-hidden"
+                />
+                <span className="text-xs text-dark-300 font-mono py-1.5 flex-1">{brushColor}</span>
+              </div>
+            </PropRow>
+
+            {/* Presets */}
+            <div className="flex flex-wrap gap-1.5 pl-19">
+              {PRESET_PALETTE.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => setBrushColor(color)}
+                  className="w-5 h-5 rounded-md border border-white/10 relative transition-transform hover:scale-110 flex items-center justify-center"
+                  style={{ backgroundColor: color }}
+                  title={color}
+                >
+                  {brushColor === color && <Check className="w-3 h-3 text-brand-300 mix-blend-difference" />}
+                </button>
+              ))}
+            </div>
+          </Section>
+
+          <div className="p-4 text-center">
+            <button
+              onClick={() => setSelectedTool('select')}
+              className="w-full btn-secondary text-xs py-2 inline-flex justify-center items-center gap-1.5"
+            >
+              Exit Drawing Mode
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center p-6 text-center text-dark-500 h-full">
+        <Sliders className="w-8 h-8 mb-3 text-dark-600 animate-pulse" />
+        <p className="text-xs">Select an object to edit its properties</p>
+      </div>
+    );
+  }
 
   const Slider = ({ label, propKey, min = 0, max = 1, step = 0.01, value, displayFn }) => (
     <PropRow label={label}>
