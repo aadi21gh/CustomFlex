@@ -4,6 +4,95 @@ import { useStudio } from '@/context/StudioContext';
 const STICKERS = {
   desi: [
     {
+      name: 'Desi Diva',
+      svgString: `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="180" viewBox="0 0 120 180">
+        <!-- Halftone / Action lines behind pop bubble -->
+        <path d="M25 20 L5 12" stroke="#B91C1C" stroke-width="1.5" stroke-linecap="round" />
+        <path d="M15 15 L2 5" stroke="#B91C1C" stroke-width="1" stroke-linecap="round" />
+        <path d="M95 20 L115 12" stroke="#B91C1C" stroke-width="1.5" stroke-linecap="round" />
+        <path d="M105 15 L118 5" stroke="#B91C1C" stroke-width="1" stroke-linecap="round" />
+        
+        <!-- Pop Art Speech Bubble -->
+        <path d="M60 5 C75 5, 80 2, 85 8 C92 5, 96 10, 94 18 C102 18, 108 24, 105 32 C110 38, 108 46, 100 48 C102 55, 96 62, 88 60 C82 65, 72 62, 60 62 C48 62, 38 65, 32 60 C24 62, 18 55, 20 48 C12 46, 10 38, 15 32 C12 24, 18 18, 26 18 C24 10, 28 5, 35 8 C40 2, 45 5, 60 5 Z" fill="#FFFBEB" stroke="#B91C1C" stroke-width="2.5" stroke-linejoin="round" />
+
+        <!-- Hindi "देसी" hand-drawn path style -->
+        <path d="M36 21 L84 21" stroke="#B91C1C" stroke-width="3" stroke-linecap="round" />
+        <path d="M43 21 C41 15, 45 13, 49 17" fill="none" stroke="#B91C1C" stroke-width="2.5" stroke-linecap="round" />
+        <path d="M48 21 L48 25 C43 25, 42 29, 45 32 C49 35, 48 39, 44 41 C42 42, 45 44, 46 46" fill="none" stroke="#B91C1C" stroke-width="2.5" stroke-linejoin="round" stroke-line-cap="round" />
+        <path d="M56 21 L56 25 C56 29, 52 32, 56 32 L60 32 M56 29 L60 29 M60 21 L60 38" fill="none" stroke="#B91C1C" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+        <path d="M60 21 C60 14, 67 14, 67 21 L67 38" fill="none" stroke="#B91C1C" stroke-width="2.5" stroke-linecap="round" />
+
+        <!-- Text "DIVA" -->
+        <text x="60" y="52" fill="#B91C1C" font-family="'Outfit', 'Impact', 'Inter', sans-serif" font-weight="900" font-size="15" text-anchor="middle" letter-spacing="0.5">DIVA</text>
+
+        <!-- Girl portrait -->
+        <!-- Neck & Shoulders -->
+        <path d="M42 135 L42 155 L32 165 C25 170, 20 180, 20 180 L100 180 C100 180, 95 170, 88 165 L78 155 L78 135 Z" fill="#FDE047" stroke="#271C19" stroke-width="2" />
+        <!-- Shadows/Neck shading -->
+        <path d="M42 135 L42 148 C42 152, 78 152, 78 148 L78 135 Z" fill="#EAB308" opacity="0.4" />
+        
+        <!-- Halter Top -->
+        <path d="M38 165 L50 148 L62 165 L76 180 L24 180 Z" fill="#271C19" />
+        <path d="M50 148 L46 135 M50 148 L54 135" stroke="#271C19" stroke-width="2.5" stroke-linecap="round" />
+
+        <!-- Head/Face base -->
+        <path d="M38 100 C32 110, 32 130, 48 135 C52 136, 68 136, 72 135 C88 130, 88 110, 82 100 C78 95, 42 95, 38 100 Z" fill="#FEF08A" stroke="#271C19" stroke-width="2" />
+
+        <!-- Hair -->
+        <path d="M38 100 C44 95, 52 98, 55 106 C55 106, 56 106, 56 106 C60 98, 68 95, 74 100 C84 102, 85 110, 83 118 C80 114, 76 110, 72 108 C65 105, 55 110, 50 110 C45 110, 35 105, 28 108 C24 110, 20 114, 17 118 C15 110, 28 102, 38 100 Z" fill="#271C19" />
+        <circle cx="50" cy="148" r="9" fill="#271C19" /> <!-- Low Bun -->
+
+        <!-- Bindi -->
+        <circle cx="50" cy="112" r="2.2" fill="#B91C1C" />
+
+        <!-- Eyes & Eyebrows -->
+        <!-- Left Eyebrow -->
+        <path d="M34 114 Q40 111 46 116" fill="none" stroke="#271C19" stroke-width="2" stroke-linecap="round" />
+        <!-- Left Eye -->
+        <path d="M35 120 Q41 117 47 122" fill="none" stroke="#271C19" stroke-width="1.8" stroke-linecap="round" />
+        <path d="M36 122 Q41 124 46 122" fill="none" stroke="#271C19" stroke-width="1.2" stroke-linecap="round" />
+        <ellipse cx="42" cy="121" rx="3.5" ry="2.5" fill="#271C19" />
+        <circle cx="43" cy="120" r="0.8" fill="#ffffff" />
+        <path d="M34 119 L32 117 M36 118 L35 115" stroke="#271C19" stroke-width="1" />
+
+        <!-- Right Eyebrow -->
+        <path d="M54 116 Q60 110 67 113" fill="none" stroke="#271C19" stroke-width="2" stroke-linecap="round" />
+        <!-- Right Eye -->
+        <path d="M53 122 Q59 117 65 120" fill="none" stroke="#271C19" stroke-width="1.8" stroke-linecap="round" />
+        <path d="M54 122 Q59 124 64 121" fill="none" stroke="#271C19" stroke-width="1.2" stroke-linecap="round" />
+        <ellipse cx="58" cy="120.5" rx="3.5" ry="2.5" fill="#271C19" />
+        <circle cx="59" cy="119.5" r="0.8" fill="#ffffff" />
+        <path d="M66 119 L68 117 M64 118 L65 115" stroke="#271C19" stroke-width="1" />
+
+        <!-- Nose & Nose Pin -->
+        <path d="M50 118 L48 126 L51 127" fill="none" stroke="#271C19" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="47" cy="126" r="1" fill="#FBBF24" stroke="#271C19" stroke-width="0.5" />
+
+        <!-- Lips / Mouth (Smirk) -->
+        <path d="M45 132 Q51 135 57 131" fill="none" stroke="#271C19" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M44 132 L42 131.5 M58 131 L60 131.5" stroke="#271C19" stroke-width="1.5" stroke-linecap="round" />
+
+        <!-- Blush on Cheeks -->
+        <ellipse cx="37" cy="126" rx="4" ry="2" fill="#F43F5E" opacity="0.35" />
+        <ellipse cx="63" cy="125" rx="4" ry="2" fill="#F43F5E" opacity="0.35" />
+
+        <!-- Hoop Earrings -->
+        <!-- Left Earring -->
+        <circle cx="31" cy="128" r="7" fill="none" stroke="#F59E0B" stroke-width="1.8" />
+        <circle cx="24" cy="128" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+        <circle cx="26" cy="133" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+        <circle cx="31" cy="135" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+        <circle cx="36" cy="133" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+
+        <!-- Right Earring -->
+        <circle cx="69" cy="128" r="7" fill="none" stroke="#F59E0B" stroke-width="1.8" />
+        <circle cx="76" cy="128" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+        <circle cx="74" cy="133" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+        <circle cx="69" cy="135" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+        <circle cx="64" cy="133" r="1.5" fill="#FEF3C7" stroke="#271C19" stroke-width="0.5" />
+      </svg>`
+    },
+    {
       name: 'Chai Lover',
       svgString: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <rect x="5" y="5" width="90" height="90" rx="45" fill="#5B4636" stroke="#DFD8C9" stroke-width="3" />
