@@ -498,21 +498,7 @@ const Landing = () => {
             </p>
           </motion.div>
 
-          {/* Scroll indicator */}
-          <motion.div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
-          >
-            <span className="text-xs text-dark-600 tracking-widest uppercase font-medium">Scroll</span>
-            <motion.div
-              className="w-px h-8 rounded-full"
-              style={{ background: 'linear-gradient(to bottom, rgba(199,109,74,0.6), transparent)' }}
-              animate={{ scaleY: [0.3, 1, 0.3], opacity: [0.4, 1, 0.4] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </motion.div>
+
         </div>
       </section>
 
