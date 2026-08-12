@@ -2,6 +2,14 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { fabric } from 'fabric';
 import { useStudio } from '@/context/StudioContext';
 import { CANVAS_DIMENSIONS } from '@/lib/utils';
+import {
+  renderProductTemplate,
+  isTemplateObject,
+  createDesignZoneClipPath,
+  getDefaultProductType,
+  PRODUCT_TYPES,
+  PRODUCT_COLORS,
+} from '@/components/studio/ProductTemplate';
 
 const StudioCanvas = ({ category }) => {
   const canvasRef = useRef(null);
@@ -12,6 +20,10 @@ const StudioCanvas = ({ category }) => {
     gridVisible, snapToGrid, zoom,
     selectedTool, setSelectedTool,
     brushColor, brushWidth, brushType,
+    productType, setProductType,
+    productColor, setProductColor,
+    activeSide, setActiveSide,
+    notifyTextureUpdate,
   } = useStudio();
 
   const dims = CANVAS_DIMENSIONS[category] || CANVAS_DIMENSIONS.artwork;
@@ -35,8 +47,6 @@ const StudioCanvas = ({ category }) => {
 
     handleResize();
     window.addEventListener('resize', handleResize);
-
-    // Also run a small timeout to let the page settle on slow load
     const timer = setTimeout(handleResize, 100);
 
     return () => {
@@ -45,6 +55,13 @@ const StudioCanvas = ({ category }) => {
     };
   }, [dims.width, dims.height]);
 
+  // Set default product type when category changes
+  useEffect(() => {
+    const defaultType = getDefaultProductType(category);
+    setProductType(defaultType);
+    setProductColor('#FFFFFF');
+  }, [category, setProductType, setProductColor]);
+
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -52,7 +69,7 @@ const StudioCanvas = ({ category }) => {
     const canvas = new fabric.Canvas(canvasRef.current, {
       width: dims.width,
       height: dims.height,
-      backgroundColor: '#ffffff',
+      backgroundColor: '#f0ede6',
       preserveObjectStacking: true,
       selection: true,
       selectionColor: 'rgba(199, 109, 74, 0.1)',
@@ -61,7 +78,6 @@ const StudioCanvas = ({ category }) => {
       controlsAboveOverlay: true,
     });
 
-    // Custom control style
     fabric.Object.prototype.set({
       cornerColor: '#C76D4A',
       cornerStyle: 'circle',
@@ -73,24 +89,66 @@ const StudioCanvas = ({ category }) => {
 
     fabricRef.current = canvas;
 
-    // Events
-    canvas.on('selection:created', (e) => setActiveObject(e.selected?.[0] || null));
-    canvas.on('selection:updated', (e) => setActiveObject(e.selected?.[0] || null));
+    // Events — ignore template objects for selection
+    canvas.on('selection:created', (e) => {
+      const sel = e.selected?.[0];
+      if (sel && !isTemplateObject(sel)) setActiveObject(sel);
+    });
+    canvas.on('selection:updated', (e) => {
+      const sel = e.selected?.[0];
+      if (sel && !isTemplateObject(sel)) setActiveObject(sel);
+    });
     canvas.on('selection:cleared', () => setActiveObject(null));
 
-    canvas.on('object:modified', () => { pushHistory(); syncLayers(); });
+    // Live texture updates & clip path enforcement for user objects
+    const handleCanvasChange = (e) => {
+      if (e?.target && isTemplateObject(e.target)) return;
+
+      // Ensure user object has clipPath set to the design zone so it CANNOT bleed outside the item
+      if (e?.target && !isTemplateObject(e.target) && e.target.id !== '__grid__' && !e.target.clipPath) {
+        e.target.clipPath = createDesignZoneClipPath(productType);
+      }
+
+      notifyTextureUpdate();
+    };
+
+    canvas.on('object:modified', (e) => {
+      if (e?.target && isTemplateObject(e.target)) return;
+      handleCanvasChange(e);
+      pushHistory();
+      syncLayers();
+    });
+
+    canvas.on('object:moving', handleCanvasChange);
+    canvas.on('object:scaling', handleCanvasChange);
+    canvas.on('object:rotating', handleCanvasChange);
+
     canvas.on('object:added', (e) => {
       const obj = e?.target;
+      if (obj && isTemplateObject(obj)) return;
+
+      if (obj && !isTemplateObject(obj) && obj.id !== '__grid__') {
+        // Enforce strict design zone clipping on added user objects
+        obj.clipPath = createDesignZoneClipPath(productType);
+      }
+
       if (obj && obj.type === 'path' && !obj.id) {
         obj.set({
           id: `path_${Date.now()}`,
           customName: 'Brush Stroke',
         });
       }
+      handleCanvasChange(e);
       syncLayers();
       pushHistory();
     });
-    canvas.on('object:removed', () => { syncLayers(); pushHistory(); });
+
+    canvas.on('object:removed', (e) => {
+      if (e?.target && isTemplateObject(e.target)) return;
+      handleCanvasChange(e);
+      syncLayers();
+      pushHistory();
+    });
 
     // Snap to grid
     canvas.on('object:moving', (e) => {
@@ -109,37 +167,40 @@ const StudioCanvas = ({ category }) => {
       if (document.activeElement !== document.body && document.activeElement.tagName !== 'CANVAS') return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (active) { canvas.remove(active); canvas.discardActiveObject(); canvas.renderAll(); }
+        if (active && !isTemplateObject(active)) { canvas.remove(active); canvas.discardActiveObject(); canvas.renderAll(); }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-        if (active) active.clone((cloned) => { canvas._clipboard = cloned; });
+        if (active && !isTemplateObject(active)) active.clone((cloned) => { canvas._clipboard = cloned; });
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
         if (canvas._clipboard) {
           canvas._clipboard.clone((cloned) => {
             cloned.set({ left: cloned.left + 20, top: cloned.top + 20, id: Date.now() });
+            cloned.clipPath = createDesignZoneClipPath(productType);
             canvas.add(cloned);
             canvas.setActiveObject(cloned);
             canvas.renderAll();
           });
         }
       }
-      // Arrow keys to move
-      if (active && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      if (active && !isTemplateObject(active) && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
         e.preventDefault();
         const step = e.shiftKey ? 10 : 1;
         const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
         const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
         active.set({ left: active.left + dx, top: active.top + dy });
         canvas.renderAll();
+        notifyTextureUpdate();
       }
     };
 
     document.addEventListener('keydown', handleKeyboard);
 
-    // Initial history state
+    // Render product template & apply clip path
+    renderProductTemplate(canvas, productType, productColor, dims.width, dims.height);
+
     pushHistory();
 
     return () => {
@@ -147,6 +208,23 @@ const StudioCanvas = ({ category }) => {
       canvas.dispose();
     };
   }, [category]);
+
+  // Re-render product template & update clip path when product type or color changes
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    const canvas = fabricRef.current;
+    renderProductTemplate(canvas, productType, productColor, dims.width, dims.height);
+
+    // Re-apply strict design zone clip path to all user objects
+    const clipPath = createDesignZoneClipPath(productType);
+    canvas.getObjects().forEach((obj) => {
+      if (!isTemplateObject(obj) && obj.id !== '__grid__') {
+        obj.clipPath = clipPath;
+      }
+    });
+    canvas.renderAll();
+    notifyTextureUpdate();
+  }, [productType, productColor]);
 
   // Handle Brush/Draw mode settings
   useEffect(() => {
@@ -156,7 +234,6 @@ const StudioCanvas = ({ category }) => {
     if (selectedTool === 'draw') {
       canvas.isDrawingMode = true;
 
-      // Select brush type
       if (brushType === 'spray') {
         canvas.freeDrawingBrush = new fabric.SprayBrush(canvas);
       } else if (brushType === 'circle') {
@@ -179,7 +256,6 @@ const StudioCanvas = ({ category }) => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
 
-    // Remove old grid
     const existingGrid = canvas.getObjects().filter((o) => o.id === '__grid__');
     existingGrid.forEach((g) => canvas.remove(g));
 
@@ -202,25 +278,97 @@ const StudioCanvas = ({ category }) => {
     }
   }, [gridVisible]);
 
-  // Center the canvas in the viewport
+  const types = PRODUCT_TYPES[category] || [];
+  const colors = PRODUCT_COLORS[category] || [];
+  const isGarment = ['clothing'].includes(category);
+
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 overflow-hidden flex items-center justify-center p-4 sm:p-8"
-      style={{ background: 'repeating-conic-gradient(rgba(255,255,255,0.02) 0% 25%, transparent 0% 50%) 0 0 / 32px 32px' }}
-    >
+    <div className="flex-1 overflow-hidden flex flex-col">
+      {/* Product selector strip */}
+      <div className="flex-shrink-0 flex items-center gap-3 px-3 py-2 border-b border-glass-border bg-dark-900/20 overflow-x-auto no-scrollbar">
+        {/* Product type chips */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-2xs font-semibold text-dark-500 uppercase tracking-wider mr-1 hidden sm:block">Product</span>
+          {types.map(({ id, label, emoji }) => (
+            <button
+              key={id}
+              onClick={() => setProductType(id)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                productType === id
+                  ? 'bg-brand-500/20 text-brand-400 ring-1 ring-brand-500/30'
+                  : 'text-dark-400 hover:text-dark-200 hover:bg-white/5'
+              }`}
+              title={label}
+            >
+              <span className="text-sm">{emoji}</span>
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Front / Back Toggle (for garments) */}
+        {isGarment && (
+          <>
+            <div className="w-px h-5 bg-glass-border flex-shrink-0" />
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-dark-950/60 border border-glass-border flex-shrink-0">
+              <button
+                onClick={() => setActiveSide('front')}
+                className={`px-2.5 py-1 rounded-md text-2xs font-bold transition-all ${
+                  activeSide === 'front' ? 'bg-brand-500 text-white' : 'text-dark-400 hover:text-white'
+                }`}
+              >
+                Front
+              </button>
+              <button
+                onClick={() => setActiveSide('back')}
+                className={`px-2.5 py-1 rounded-md text-2xs font-bold transition-all ${
+                  activeSide === 'back' ? 'bg-brand-500 text-white' : 'text-dark-400 hover:text-white'
+                }`}
+              >
+                Back
+              </button>
+            </div>
+          </>
+        )}
+
+        <div className="w-px h-5 bg-glass-border flex-shrink-0" />
+
+        {/* Color picker */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-2xs font-semibold text-dark-500 uppercase tracking-wider mr-1 hidden sm:block">Color</span>
+          {colors.map(({ id, hex, label }) => (
+            <button
+              key={id}
+              onClick={() => setProductColor(hex)}
+              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
+                productColor === hex ? 'border-brand-500 ring-2 ring-brand-500/30 scale-110' : 'border-white/20'
+              }`}
+              style={{ background: hex }}
+              title={label}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Canvas area */}
       <div
-        className="relative transition-all duration-200"
-        style={{
-          boxShadow: '0 0 0 1px rgba(99,102,241,0.3), 0 20px 60px rgba(0,0,0,0.5)',
-          borderRadius: 4,
-          transform: `scale(${scale})`,
-          transformOrigin: 'center center',
-          width: dims.width,
-          height: dims.height,
-        }}
+        ref={containerRef}
+        className="flex-1 overflow-hidden flex items-center justify-center p-4 sm:p-8"
+        style={{ background: 'repeating-conic-gradient(rgba(255,255,255,0.02) 0% 25%, transparent 0% 50%) 0 0 / 32px 32px' }}
       >
-        <canvas ref={canvasRef} id="studio-canvas" />
+        <div
+          className="relative transition-all duration-200"
+          style={{
+            boxShadow: '0 0 0 1px rgba(99,102,241,0.3), 0 20px 60px rgba(0,0,0,0.5)',
+            borderRadius: 4,
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
+            width: dims.width,
+            height: dims.height,
+          }}
+        >
+          <canvas ref={canvasRef} id="studio-canvas" />
+        </div>
       </div>
     </div>
   );

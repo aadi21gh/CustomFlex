@@ -14,8 +14,10 @@ import LayersPanel from '@/components/studio/LayersPanel';
 import PropertiesPanel from '@/components/studio/PropertiesPanel';
 import ShapeLibrary from '@/components/studio/ShapeLibrary';
 import StickerLibrary from '@/components/studio/StickerLibrary';
-import AIImageGenerator from '@/components/studio/AIImageGenerator';
+import AIDesigner from '@/components/studio/AIDesigner';
 import ProductPreview from '@/components/studio/ProductPreview';
+import Product3DViewer from '@/components/studio/Product3DViewer';
+import { Box } from 'lucide-react';
 import api from '@/lib/axios';
 
 // Clipboard state helper
@@ -30,6 +32,7 @@ const StudioContent = ({ category, designId: editId }) => {
   const navigate = useNavigate();
   const [leftPanel, setLeftPanel] = useState('shapes'); // 'shapes' | 'ai'
   const [showPreview, setShowPreview] = useState(false);
+  const [show3DViewport, setShow3DViewport] = useState(true); // Default 3D Viewport enabled
   const [isLoadingDesign, setIsLoadingDesign] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -317,6 +320,9 @@ const StudioContent = ({ category, designId: editId }) => {
           <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''} hidden sm:flex`} title="Toggle grid">
             <Grid3X3 className="w-4 h-4" />
           </button>
+          <button onClick={() => setShow3DViewport(!show3DViewport)} className={`toolbar-btn ${show3DViewport ? 'active bg-brand-500/20 text-brand-300' : ''}`} title="Interactive 3D Studio (Rotate 360°)">
+            <Box className="w-4 h-4" />
+          </button>
           <button onClick={() => setShowPreview(!showPreview)} className={`toolbar-btn ${showPreview ? 'active' : ''}`} title="Product preview">
             {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -382,7 +388,7 @@ const StudioContent = ({ category, designId: editId }) => {
             {[
               { id: 'shapes', label: 'Elements' },
               { id: 'stickers', label: 'Stickers' },
-              { id: 'ai', label: 'AI Art' },
+              { id: 'ai', label: 'AI Designer' },
             ].map(({ id, label }) => (
               <button
                 key={id}
@@ -399,18 +405,29 @@ const StudioContent = ({ category, designId: editId }) => {
             ) : leftPanel === 'stickers' ? (
               <StickerLibrary />
             ) : (
-              <AIImageGenerator />
+              <AIDesigner />
             )}
           </div>
         </div>
 
-        {/* Canvas area */}
+        {/* Canvas & 3D Interactive Viewport Container */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
           <StudioToolbar />
-          {/* Canvas */}
-          <div className="flex-1 overflow-hidden">
-            <StudioCanvas category={category} />
+
+          {/* Studio Workspace Area (Split / Single View) */}
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+            {/* 2D Design Canvas */}
+            <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${show3DViewport ? 'md:w-1/2' : 'w-full'}`}>
+              <StudioCanvas category={category} />
+            </div>
+
+            {/* Interactive 3D Rotatable Model Viewport */}
+            {show3DViewport && (
+              <div className="md:w-1/2 h-64 md:h-full border-t md:border-t-0 md:border-l border-glass-border overflow-hidden relative transition-all duration-300">
+                <Product3DViewer />
+              </div>
+            )}
           </div>
         </div>
 

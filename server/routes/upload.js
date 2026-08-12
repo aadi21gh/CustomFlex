@@ -37,17 +37,49 @@ router.post('/base64', protect, async (req, res, next) => {
   }
 });
 
-// @desc    Generate AI image via Stability AI
+// @desc    Generate AI image via Stability AI (enhanced with product context)
 // @route   POST /api/upload/ai-generate
 // @access  Private
 router.post('/ai-generate', protect, async (req, res, next) => {
   try {
-    const { prompt, width = 512, height = 512, steps = 30 } = req.body;
+    const {
+      prompt,
+      width = 1024,
+      height = 1024,
+      steps = 30,
+      productContext = '',
+      mode = 'full',
+      variationOf = null,
+    } = req.body;
 
     if (!prompt) return res.status(400).json({ success: false, message: 'Prompt is required' });
     if (!process.env.STABILITY_API_KEY) {
       return res.status(503).json({ success: false, message: 'AI image generation is not configured. Please add STABILITY_API_KEY to your .env file.' });
     }
+
+    // Build enriched prompt based on mode and product context
+    let enrichedPrompt = prompt;
+
+    // Mode-specific enhancements
+    const modeEnhancements = {
+      full: 'high quality, detailed, professional print-ready artwork',
+      pattern: 'seamless tileable repeating pattern, uniform distribution, no visible seams',
+      logo: 'centered logo emblem design, clean isolated subject, simple background, vector-like quality',
+    };
+
+    if (modeEnhancements[mode]) {
+      enrichedPrompt += `, ${modeEnhancements[mode]}`;
+    }
+
+    // Product context enrichment
+    if (productContext) {
+      enrichedPrompt += `, designed for ${productContext} product, print-quality resolution`;
+    }
+
+    // Negative prompt for better results
+    const negativePrompt = mode === 'logo'
+      ? 'blurry, low quality, complex background, busy background, noisy'
+      : 'blurry, low quality, watermark, text overlay, jpeg artifacts, poorly rendered';
 
     const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
       method: 'POST',
@@ -57,8 +89,11 @@ router.post('/ai-generate', protect, async (req, res, next) => {
         Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
       },
       body: JSON.stringify({
-        text_prompts: [{ text: prompt, weight: 1 }],
-        cfg_scale: 7,
+        text_prompts: [
+          { text: enrichedPrompt, weight: 1 },
+          { text: negativePrompt, weight: -1 },
+        ],
+        cfg_scale: mode === 'logo' ? 8 : 7,
         height: Math.min(height, 1024),
         width: Math.min(width, 1024),
         steps: Math.min(steps, 50),
@@ -67,8 +102,11 @@ router.post('/ai-generate', protect, async (req, res, next) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return res.status(response.status).json({ success: false, message: error.message || 'AI generation failed' });
+      const error = await response.json().catch(() => ({}));
+      // IMPORTANT: Map external API errors to 502 — never forward the third-party
+      // status code directly. Stability AI returns 401 for invalid API keys, and
+      // forwarding that to our client triggers the JWT-expired logout interceptor.
+      return res.status(502).json({ success: false, message: error.message || 'AI generation failed — check your Stability API key' });
     }
 
     const data = await response.json();
@@ -89,6 +127,8 @@ router.post('/ai-generate', protect, async (req, res, next) => {
       success: true,
       url: uploadResult.secure_url,
       publicId: uploadResult.public_id,
+      mode,
+      productContext,
     });
   } catch (error) {
     next(error);

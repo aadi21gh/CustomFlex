@@ -311,3 +311,50 @@
 .toast-container {
   font-family: 'Inter', sans-serif !important;
 }
+
+/* ─── AI Designer Panel ───────────────────────────────────────────────────── */
+.ai-mode-btn {
+  cursor: pointer;
+  user-select: none;
+}
+.ai-mode-btn:hover {
+  transform: translateY(-1px);
+}
+.ai-mode-btn:active {
+  transform: translateY(0);
+}
+
+/* ─── Studio Dark Theme Overrides ──────────────────────────────────────────── */
+/* The studio uses a dark bg — override the warm light theme text-white rule */
+.h-screen.bg-dark-950 .text-white,
+.h-screen.bg-dark-950 .text-white *,
+[class*="bg-dark-950"] .text-white {
+  color: #F7F3EB !important;
+}
+
+/* Studio panels — ensure text readability on dark background */
+.h-screen.bg-dark-950 .input-field {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #F7F3EB !important;
+}
+.h-screen.bg-dark-950 .input-field:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(199, 109, 74, 0.6);
+  box-shadow: 0 0 0 3px rgba(199, 109, 74, 0.15);
+}
+.h-screen.bg-dark-950 .input-field::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Product selector strip */
+.h-screen.bg-dark-950 .text-2xs {
+  font-size: 0.65rem;
+  line-height: 1rem;
+}
+
+/* ─── Product Template Design Zone Pulse ───────────────────────────────────── */
+@keyframes zone-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}

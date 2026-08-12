@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback } from 'react';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
+import { isTemplateObject, getDefaultProductType } from '@/components/studio/ProductTemplate';
 
 const StudioContext = createContext(null);
 
@@ -22,12 +23,22 @@ export const StudioProvider = ({ children }) => {
   const [brushWidth, setBrushWidth] = useState(10);
   const [brushType, setBrushType] = useState('pencil');
 
+  // Product template state
+  const [productType, setProductType] = useState('tshirt');
+  const [productColor, setProductColor] = useState('#FFFFFF');
+  const [activeSide, setActiveSide] = useState('front'); // 'front' | 'back'
+  const [textureVersion, setTextureVersion] = useState(0);
+
+  const notifyTextureUpdate = useCallback(() => {
+    setTextureVersion(v => v + 1);
+  }, []);
+
   const canvas = useCallback(() => fabricRef.current, []);
 
-  // Update layers list from canvas objects
+  // Update layers list from canvas objects — excludes template objects
   const syncLayers = useCallback(() => {
     if (!fabricRef.current) return;
-    const objects = fabricRef.current.getObjects();
+    const objects = fabricRef.current.getObjects().filter(obj => !isTemplateObject(obj));
     setLayers(
       objects.map((obj, i) => ({
         id: obj.id || i,
@@ -40,10 +51,15 @@ export const StudioProvider = ({ children }) => {
     );
   }, []);
 
-  // Push to history
+  // Push to history — excludes template objects from serialization
   const pushHistory = useCallback(() => {
     if (!fabricRef.current) return;
-    const state = JSON.stringify(fabricRef.current.toJSON(['id', 'customName', 'selectable']));
+    const allObjects = fabricRef.current.toJSON(['id', 'customName', 'selectable']);
+    // Filter out template objects so undo/redo doesn't affect product templates
+    allObjects.objects = (allObjects.objects || []).filter(
+      obj => !obj.id || !obj.id.startsWith('__template__')
+    );
+    const state = JSON.stringify(allObjects);
     setHistory((prev) => {
       const trimmed = prev.slice(0, historyIndex + 1);
       return [...trimmed, state];
@@ -154,6 +170,14 @@ export const StudioProvider = ({ children }) => {
     setBrushWidth,
     brushType,
     setBrushType,
+    productType,
+    setProductType,
+    productColor,
+    setProductColor,
+    activeSide,
+    setActiveSide,
+    textureVersion,
+    notifyTextureUpdate,
     canUndo: historyIndex > 0,
     canRedo: historyIndex < history.length - 1,
   };
