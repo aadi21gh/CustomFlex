@@ -30,7 +30,7 @@ exports.register = async (req, res, next) => {
       console.error('Welcome email failed:', e.message);
     }
 
-    sendTokenResponse(user, 201, res, 'Registration successful! Welcome to CustomFlex');
+    sendTokenResponse(user, 201, res, 'Registration successful! Welcome to Crexza');
   } catch (error) {
     next(error);
   }

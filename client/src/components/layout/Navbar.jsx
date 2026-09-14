@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getInitials, stringToColor } from '@/lib/utils';
+import BrandLogo from '@/components/common/BrandLogo';
 
 const navLinks = [
   { label: 'Explore', href: '/explore' },
@@ -53,17 +54,7 @@ const Navbar = () => {
         <div className="section-container">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="relative">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', filter: 'blur(8px)' }} />
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">
-                Custom<span className="gradient-text">Flex</span>
-              </span>
-            </Link>
+            <BrandLogo size="md" />
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-1">
@@ -71,10 +62,10 @@ const Navbar = () => {
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                     location.pathname === link.href
-                      ? 'text-white bg-white/10'
-                      : 'text-dark-300 hover:text-white hover:bg-white/5'
+                      ? 'text-brand-500 bg-brand-500/10'
+                      : 'text-dark-300 hover:text-brand-500 hover:bg-brand-500/5'
                   }`}
                 >
                   {link.label}
@@ -83,7 +74,7 @@ const Navbar = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-500/10 transition-all duration-200 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-500/10 transition-all duration-200 flex items-center gap-1.5"
                 >
                   <Shield className="w-3.5 h-3.5" />
                   Admin
@@ -134,7 +125,7 @@ const Navbar = () => {
                               { icon: Palette, label: 'My Designs', href: '/dashboard/designs' },
                               { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
                             ].map(({ icon: Icon, label, href }) => (
-                              <Link key={href} to={href} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-dark-300 hover:text-white hover:bg-white/5 transition-colors">
+                              <Link key={href} to={href} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-dark-300 hover:text-brand-500 hover:bg-brand-500/10 transition-colors">
                                 <Icon className="w-4 h-4" />
                                 {label}
                               </Link>
@@ -186,14 +177,14 @@ const Navbar = () => {
                   <Link
                     key={link.href}
                     to={link.href}
-                    className="px-4 py-3 rounded-xl text-sm font-medium text-dark-200 hover:text-white hover:bg-white/5 transition-colors"
+                    className="px-4 py-3 rounded-xl text-sm font-medium text-dark-200 hover:text-brand-500 hover:bg-brand-500/10 transition-colors"
                   >
                     {link.label}
                   </Link>
                 ))}
                 {isAuthenticated ? (
                   <>
-                    <Link to="/dashboard" className="px-4 py-3 rounded-xl text-sm font-medium text-dark-200 hover:text-white hover:bg-white/5 transition-colors">Dashboard</Link>
+                    <Link to="/dashboard" className="px-4 py-3 rounded-xl text-sm font-medium text-dark-200 hover:text-brand-500 hover:bg-brand-500/10 transition-colors">Dashboard</Link>
                     <button onClick={handleLogout} className="px-4 py-3 rounded-xl text-sm font-medium text-red-400 text-left hover:bg-red-500/10 transition-colors">Log Out</button>
                   </>
                 ) : (

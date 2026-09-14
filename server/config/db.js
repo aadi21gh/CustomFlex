@@ -471,11 +471,11 @@ const seedCommunityData = async () => {
 
     // 1. Create Users
     const usersData = [
-      { name: 'Sarah Chen', email: 'sarah@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', role: 'user', isEmailVerified: true },
-      { name: 'Marcus Rivera', email: 'marcus@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', role: 'user', isEmailVerified: true },
-      { name: 'Aisha Patel', email: 'aisha@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', role: 'user', isEmailVerified: true },
-      { name: 'James Wu', email: 'james@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', role: 'user', isEmailVerified: true },
-      { name: 'Elena Rostova', email: 'elena@customflex.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', role: 'user', isEmailVerified: true }
+      { name: 'Sarah Chen', email: 'sarah@crexza.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', role: 'user', isEmailVerified: true },
+      { name: 'Marcus Rivera', email: 'marcus@crexza.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', role: 'user', isEmailVerified: true },
+      { name: 'Aisha Patel', email: 'aisha@crexza.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', role: 'user', isEmailVerified: true },
+      { name: 'James Wu', email: 'james@crexza.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', role: 'user', isEmailVerified: true },
+      { name: 'Elena Rostova', email: 'elena@crexza.com', password: 'password123', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', role: 'user', isEmailVerified: true }
     ];
 
     const users = [];
@@ -545,7 +545,7 @@ const seedCommunityData = async () => {
 
     // 5. Create Posts
     const postsData = [
-      { user: users[0]._id, order: orders[0]._id, design: designs[0]._id, images: [{ url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600' }], caption: 'Designed this sweet Cyberpunk Hoodie on CustomFlex! Super comfy and the printing is high quality. Let me know what you think!', category: 'clothing', likesCount: 847, commentsCount: 12, isPublic: true, isFeatured: true },
+      { user: users[0]._id, order: orders[0]._id, design: designs[0]._id, images: [{ url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600' }], caption: 'Designed this sweet Cyberpunk Hoodie on Crexza! Super comfy and the printing is high quality. Let me know what you think!', category: 'clothing', likesCount: 847, commentsCount: 12, isPublic: true, isFeatured: true },
       { user: users[1]._id, order: orders[1]._id, design: designs[1]._id, images: [{ url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600' }], caption: 'Just received my custom Line Art Tee! Simple but premium. High quality combed ringspun cotton.', category: 'clothing', likesCount: 520, commentsCount: 5, isPublic: true, isFeatured: true },
       { user: users[2]._id, order: orders[2]._id, design: designs[2]._id, images: [{ url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600' }], caption: 'My new Stretched Canvas Print looks stunning on the bedroom wall! Turned my design into real gallery art.', category: 'artwork', likesCount: 310, commentsCount: 8, isPublic: true, isFeatured: true },
       { user: users[3]._id, order: orders[3]._id, design: designs[3]._id, images: [{ url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600' }], caption: 'Retro Vaporwave vibes for this custom tee. The colors are incredibly vibrant.', category: 'clothing', likesCount: 145, commentsCount: 3, isPublic: true, isFeatured: false },
@@ -556,7 +556,7 @@ const seedCommunityData = async () => {
 
     // 6. Create Comments
     const commentsData = [
-      { user: users[0]._id, post: posts[0]._id, text: 'CustomFlex is insane. I designed a hoodie, shared it, got 500 likes and got my money back in a week. This is the future!' },
+      { user: users[0]._id, post: posts[0]._id, text: 'Crexza is insane. I designed a hoodie, shared it, got 500 likes and got my money back in a week. This is the future!' },
       { user: users[1]._id, post: posts[0]._id, text: 'The design studio is on par with Figma for product design. The canvas tools saved me hours of work.' },
       { user: users[2]._id, post: posts[0]._id, text: 'I love how my designs can earn me rewards. It gamifies creativity in the most addictive way.' },
       { user: users[3]._id, post: posts[0]._id, text: 'Best custom product platform I\'ve used. The UI is stunning and everything just works smoothly.' },

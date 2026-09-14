@@ -5,7 +5,7 @@ const generateJWTSecret = () => {
 };
 
 console.log('\n======================================================');
-console.log('🔒 CUSTOMFLEX PRODUCTION SECURITY KEY GENERATOR 🔒');
+console.log('🔒 CREXZA PRODUCTION SECURITY KEY GENERATOR 🔒');
 console.log('======================================================');
 console.log(`Generated Secure JWT_SECRET:`);
 console.log(`👉  ${generateJWTSecret()}  👈`);

@@ -326,7 +326,7 @@ const Landing = () => {
   ];
 
   const testimonials = [
-    { name: 'Sarah Chen', handle: '@sarahcreates', text: 'CustomFlex is insane. I designed a hoodie, shared it, got 500 likes and got my money back in a week. This is the future!', rating: 5 },
+    { name: 'Sarah Chen', handle: '@sarahcreates', text: 'Crexza is insane. I designed a hoodie, shared it, got 500 likes and got my money back in a week. This is the future!', rating: 5 },
     { name: 'Marcus Rivera', handle: '@marcusart', text: 'The design studio is on par with Figma for product design. The canvas tools saved me hours of work.', rating: 5 },
     { name: 'Aisha Patel', handle: '@aishastyle', text: 'I love how my designs can earn me rewards. It gamifies creativity in the most addictive way.', rating: 5 },
     { name: 'James Wu', handle: '@jameswu_', text: 'Best custom product platform I\'ve used. The UI is stunning and everything just works smoothly.', rating: 5 },
@@ -359,9 +359,9 @@ const Landing = () => {
             className="absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.18) 0%, transparent 60%), ' +
-                'radial-gradient(ellipse 60% 50% at 20% 80%, rgba(139,92,246,0.1) 0%, transparent 60%), ' +
-                'radial-gradient(ellipse 40% 40% at 80% 70%, rgba(236,72,153,0.08) 0%, transparent 60%)',
+                'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(199,109,74,0.14) 0%, transparent 60%), ' +
+                'radial-gradient(ellipse 60% 50% at 20% 80%, rgba(138,154,123,0.12) 0%, transparent 60%), ' +
+                'radial-gradient(ellipse 40% 40% at 80% 70%, rgba(216,147,119,0.1) 0%, transparent 60%)',
             }}
           />
 
@@ -380,8 +380,8 @@ const Landing = () => {
             transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
           >
             <div
-              className="w-[900px] h-[900px] rounded-full border opacity-[0.06]"
-              style={{ borderColor: 'rgba(99,102,241,0.8)', boxShadow: '0 0 120px rgba(99,102,241,0.1) inset' }}
+              className="w-[900px] h-[900px] rounded-full border opacity-[0.12]"
+              style={{ borderColor: 'rgba(199,109,74,0.4)', boxShadow: '0 0 120px rgba(199,109,74,0.08) inset' }}
             />
           </motion.div>
           <motion.div
@@ -390,8 +390,8 @@ const Landing = () => {
             transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
           >
             <div
-              className="w-[1200px] h-[1200px] rounded-full border opacity-[0.04]"
-              style={{ borderColor: 'rgba(139,92,246,0.6)' }}
+              className="w-[1200px] h-[1200px] rounded-full border opacity-[0.08]"
+              style={{ borderColor: 'rgba(138,154,123,0.4)' }}
             />
           </motion.div>
         </motion.div>
@@ -419,19 +419,14 @@ const Landing = () => {
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-20">
           {/* Badge */}
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-sm font-medium text-brand-300"
-            style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-sm font-semibold text-brand-500"
+            style={{ background: 'rgba(199, 109, 74, 0.1)', border: '1px solid rgba(199, 109, 74, 0.25)' }}
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
           >
-            <motion.span
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            >
-              <Sparkles className="w-4 h-4" />
-            </motion.span>
-            <span>18+ Customizable Products</span>
+            <span className="font-mono font-black text-base text-brand-500 tracking-tighter">(:</span>
+            <span>Crexza Studio • Realistic Apparel Templates</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </motion.div>
 
@@ -618,7 +613,7 @@ const Landing = () => {
               Four steps to <span className="gradient-text">earn rewards</span>
             </h2>
             <p className="text-dark-400 text-lg max-w-2xl mx-auto">
-              CustomFlex is the only platform where community engagement rewards your creativity.
+              Crexza is the only platform where community engagement rewards your creativity.
             </p>
           </motion.div>
 
@@ -670,7 +665,7 @@ const Landing = () => {
                 <span className="gradient-text"> pays you back</span>
               </h2>
               <p className="text-dark-400 text-lg leading-relaxed mb-8">
-                CustomFlex's unique reward system celebrates viral designs. Share your custom products, grow your audience, and when your post accumulates enough likes — we reward your purchase automatically.
+                Crexza's unique reward system celebrates viral designs. Share your custom products, grow your audience, and when your post accumulates enough likes — we reward your purchase automatically.
               </p>
               <ul className="space-y-3">
                 {[
@@ -829,7 +824,7 @@ const Landing = () => {
             Ready to create something <span className="gradient-text">extraordinary?</span>
           </h2>
           <p className="relative text-dark-400 text-lg mb-10 max-w-xl mx-auto">
-            Join 50,000+ creators on CustomFlex and start turning your ideas into beautiful custom products today.
+            Join 50,000+ creators on Crexza and start turning your ideas into beautiful custom products today.
           </p>
           <div className="relative flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/auth/register" id="footer-cta-btn" className="btn-primary !px-10 !py-4 text-lg">

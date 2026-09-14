@@ -18,7 +18,7 @@ export const PageSpinner = () => (
         <div className="w-16 h-16 rounded-full border-4 border-dark-700" />
         <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-brand-500 animate-spin" />
       </div>
-      <p className="text-dark-300 font-medium">Loading CustomFlex...</p>
+      <p className="text-dark-300 font-medium">Loading Crexza...</p>
     </div>
   </div>
 );

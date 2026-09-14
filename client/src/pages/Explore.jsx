@@ -124,7 +124,7 @@ const Explore = () => {
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all duration-200 ${category === cat ? 'bg-brand-500/25 text-brand-300 border border-brand-500/30' : 'text-dark-400 hover:text-white hover:bg-white/5'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all duration-200 ${category === cat ? 'bg-brand-500 text-white shadow-sm' : 'text-dark-400 hover:text-brand-500 hover:bg-brand-500/10'}`}
               >
                 {cat}
               </button>
@@ -137,7 +137,7 @@ const Explore = () => {
               <button
                 key={id}
                 onClick={() => setSort(id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${sort === id ? 'bg-brand-500/25 text-brand-300 border border-brand-500/30' : 'text-dark-400 hover:text-white hover:bg-white/5'}`}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${sort === id ? 'bg-brand-500 text-white shadow-sm' : 'text-dark-400 hover:text-brand-500 hover:bg-brand-500/10'}`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}

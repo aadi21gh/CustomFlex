@@ -1,5 +1,5 @@
 /**
- * CustomFlex Universal Pricing Engine
+ * Crexza Universal Pricing Engine
  *
  * Transparent, data-driven pricing formula:
  *   Final Price = Base Product Price + Material Price + Design Charge + Delivery Charge

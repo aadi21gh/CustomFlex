@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="crexza-standout-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5722" />
+      <stop offset="35%" stop-color="#E64A19" />
+      <stop offset="75%" stop-color="#C76D4A" />
+      <stop offset="100%" stop-color="#8A9A7B" />
+    </linearGradient>
+    <filter id="logo-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="64" height="64" rx="18" fill="url(#crexza-standout-bg)" />
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.5" />
+  
+  <!-- Bold C-curved opening parenthesis (Left) -->
+  <path
+    d="M 31 16 C 16 16 9.5 23.5 9.5 32 C 9.5 40.5 16 48 31 48"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#logo-shadow)"
+  />
+
+  <!-- Twin eye dots ":" (Right) -->
+  <circle cx="45" cy="22.5" r="4.2" fill="#FFFFFF" filter="url(#logo-shadow)" />
+  <circle cx="45" cy="41.5" r="4.2" fill="#FFFFFF" filter="url(#logo-shadow)" />
+</svg>

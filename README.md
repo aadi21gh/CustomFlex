@@ -1,6 +1,6 @@
-# CustomFlex 🎨
+# Crexza 🎨
 
-CustomFlex is a premium C2B (Customer-to-Business) and C2C (Customer-to-Customer) e-commerce marketplace that empowers creators to design custom products using a professional design studio, purchase them securely, and earn full refunds by sharing their creations and achieving viral community engagement.
+Crexza is a premium C2B (Customer-to-Business) and C2C (Customer-to-Customer) e-commerce marketplace that empowers creators to design custom products using a professional design studio, purchase them securely, and earn full refunds by sharing their creations and achieving viral community engagement.
 
 Built with a modern, futuristic look inspired by Apple, Linear, Framer, and Figma, this full-stack application features custom glassmorphism styling, smooth animations, and high interactivity.
 
@@ -37,15 +37,16 @@ Built with a modern, futuristic look inspired by Apple, Linear, Framer, and Figm
 
 ## Tech Stack
 
-* **Frontend**: React (Vite), Tailwind CSS, Framer Motion, Fabric.js, Axios, React Hot Toast
-* **Backend**: Node.js, Express, MongoDB (Mongoose), JWT authentication (Passport.js), Cloudinary API, Stripe SDK, Stability AI API, Node-Cron
+* **Frontend**: React 18, Vite, TailwindCSS, Framer Motion, Lucide React, Fabric.js (Canvas), Three.js (3D preview), React Dropzone, React Hot Toast
+* **Backend**: Node.js, Express.js, MongoDB (Mongoose), Passport.js (Google OAuth2 & JWT), Cloudinary, Stripe, Nodemailer, node-cron
+* **Authentication**: JWT stored in HTTP-only cookies, Google OAuth 2.0 social login, secure BCrypt password hashing
 
 ---
 
 ## Directory Structure
 
 ```
-CustomFlex/
+Crexza/
 ├── client/                 # Frontend React Application (Vite)
 │   ├── src/
 │   │   ├── components/     # UI, layout, studio, and explore components
@@ -85,14 +86,14 @@ CustomFlex/
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd CustomFlex
+   cd Crexza
    ```
 
 2. **Configure Backend Environment**:
    Create a `.env` file in the `server` directory using the provided `server/.env.example` as a template:
    ```env
    PORT=5000
-   MONGO_URI=mongodb://localhost:27017/customflex
+   MONGO_URI=mongodb://localhost:27017/crexza
    JWT_SECRET=your_jwt_secret_key
    SESSION_SECRET=your_session_secret_key
 
@@ -109,7 +110,7 @@ CustomFlex/
    EMAIL_PORT=2525
    EMAIL_USER=your_smtp_user
    EMAIL_PASS=your_smtp_password
-   EMAIL_FROM=noreply@customflex.com
+   EMAIL_FROM=noreply@crexza.com
 
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret

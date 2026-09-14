@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import {
   Sliders, Type, Palette, Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight, Sparkles, Check,
+  Scissors, Gauge, Wind, RotateCw, Ruler, Grid3X3,
 } from 'lucide-react';
 import { useStudio } from '@/context/StudioContext';
+import { MATERIAL_PRESETS } from '@/lib/utils';
 
 const FONT_FAMILIES = [
   'Inter', 'Poppins', 'Montserrat', 'Playfair Display', 'Oswald',
@@ -25,6 +27,10 @@ const PropertiesPanel = () => {
     brushColor, setBrushColor,
     brushWidth, setBrushWidth,
     brushType, setBrushType,
+    // New state
+    activePatternPiece, patternPieces, setPatternPieces,
+    selectedSceneObject, simulationRef,
+    materialPreset, setMaterialPreset, category,
   } = useStudio();
   const canvas = () => fabricRef.current;
 
@@ -446,6 +452,219 @@ const PropertiesPanel = () => {
           </PropRow>
         </Section>
       )}
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Pattern Properties Panel — shown when a pattern piece is selected
+   ═══════════════════════════════════════════════════════════════════════════════ */
+export const PatternPropertiesPanel = () => {
+  const {
+    activePatternPiece, patternPieces, setPatternPieces,
+    category,
+  } = useStudio();
+
+  const piece = patternPieces.find(p => p.id === activePatternPiece);
+
+  const Section = ({ title, children }) => (
+    <div className="border-b border-glass-border last:border-0">
+      <div className="px-4 py-2.5 text-2xs font-semibold text-dark-500 uppercase tracking-widest">{title}</div>
+      <div className="px-4 pb-4 space-y-3">{children}</div>
+    </div>
+  );
+
+  const PropRow = ({ label, children }) => (
+    <div className="flex items-center gap-3">
+      <label className="text-xs text-dark-400 w-16 flex-shrink-0">{label}</label>
+      <div className="flex-1">{children}</div>
+    </div>
+  );
+
+  if (!piece) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 text-center text-dark-500 h-full">
+        <Scissors className="w-8 h-8 mb-3 text-dark-600" />
+        <p className="text-xs">Select a pattern piece to edit its properties</p>
+      </div>
+    );
+  }
+
+  const updatePiece = (key, value) => {
+    setPatternPieces(patternPieces.map(p =>
+      p.id === piece.id ? { ...p, [key]: value } : p
+    ));
+  };
+
+  // Compute dimensions
+  const xs = piece.points.map(p => p[0]);
+  const ys = piece.points.map(p => p[1]);
+  const width = (Math.max(...xs) - Math.min(...xs)).toFixed(1);
+  const height = (Math.max(...ys) - Math.min(...ys)).toFixed(1);
+  let perimeter = 0;
+  for (let i = 0; i < piece.points.length; i++) {
+    const p1 = piece.points[i];
+    const p2 = piece.points[(i + 1) % piece.points.length];
+    perimeter += Math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2);
+  }
+
+  return (
+    <div className="text-sm">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-glass-border bg-dark-900/20">
+        <Scissors className="w-4 h-4 text-brand-400" />
+        <span className="text-xs font-semibold text-dark-100">Pattern Properties</span>
+      </div>
+
+      <Section title="Piece Info">
+        <PropRow label="Name">
+          <input
+            type="text"
+            value={piece.name}
+            onChange={(e) => updatePiece('name', e.target.value)}
+            className="input-field !py-1.5 text-xs"
+          />
+        </PropRow>
+        <PropRow label="Points">
+          <span className="text-xs font-mono text-dark-300">{piece.points.length} vertices</span>
+        </PropRow>
+      </Section>
+
+      <Section title="Dimensions (cm)">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2 rounded-lg bg-dark-900/40 border border-glass-border text-center">
+            <span className="text-2xs text-dark-500 block">Width</span>
+            <span className="text-xs font-mono font-bold text-dark-200">{width}</span>
+          </div>
+          <div className="p-2 rounded-lg bg-dark-900/40 border border-glass-border text-center">
+            <span className="text-2xs text-dark-500 block">Height</span>
+            <span className="text-xs font-mono font-bold text-dark-200">{height}</span>
+          </div>
+          <div className="p-2 rounded-lg bg-dark-900/40 border border-glass-border text-center">
+            <span className="text-2xs text-dark-500 block">Perim.</span>
+            <span className="text-xs font-mono font-bold text-dark-200">{perimeter.toFixed(1)}</span>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Construction">
+        <PropRow label="Seam">
+          <div className="flex items-center gap-2">
+            <input
+              type="range" min={0} max={3} step={0.1}
+              value={piece.seamAllowance}
+              onChange={(e) => updatePiece('seamAllowance', parseFloat(e.target.value))}
+              className="flex-1 accent-brand-500 h-1 bg-dark-800 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-xs text-dark-300 w-12 text-right font-mono">{piece.seamAllowance} cm</span>
+          </div>
+        </PropRow>
+        <PropRow label="Grain">
+          <div className="flex items-center gap-2">
+            <input
+              type="range" min={0} max={360} step={15}
+              value={piece.grainAngle}
+              onChange={(e) => updatePiece('grainAngle', parseInt(e.target.value))}
+              className="flex-1 accent-brand-500 h-1 bg-dark-800 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-xs text-dark-300 w-10 text-right font-mono">{piece.grainAngle}°</span>
+          </div>
+        </PropRow>
+        <PropRow label="Color">
+          <input
+            type="color"
+            value={piece.color}
+            onChange={(e) => updatePiece('color', e.target.value)}
+            className="w-full h-8 rounded-lg cursor-pointer bg-transparent border border-glass-border"
+          />
+        </PropRow>
+      </Section>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Simulation Properties Panel — shown when sim object is selected
+   ═══════════════════════════════════════════════════════════════════════════════ */
+export const SimulationPropertiesPanel = () => {
+  const {
+    simulationRef, simulationStats,
+    materialPreset, setMaterialPreset,
+    category,
+  } = useStudio();
+
+  const sim = simulationRef.current;
+  const presets = MATERIAL_PRESETS[category] || MATERIAL_PRESETS.clothing;
+
+  const Section = ({ title, children }) => (
+    <div className="border-b border-glass-border last:border-0">
+      <div className="px-4 py-2.5 text-2xs font-semibold text-dark-500 uppercase tracking-widest">{title}</div>
+      <div className="px-4 pb-4 space-y-3">{children}</div>
+    </div>
+  );
+
+  const PropRow = ({ label, children }) => (
+    <div className="flex items-center gap-3">
+      <label className="text-xs text-dark-400 w-16 flex-shrink-0">{label}</label>
+      <div className="flex-1">{children}</div>
+    </div>
+  );
+
+  return (
+    <div className="text-sm">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-glass-border bg-dark-900/20">
+        <Grid3X3 className="w-4 h-4 text-emerald-400" />
+        <span className="text-xs font-semibold text-dark-100">Simulation Properties</span>
+      </div>
+
+      <Section title="XPBD Parameters">
+        <PropRow label="Substeps">
+          <span className="text-xs font-mono text-dark-300">{sim?.subSteps || 8}</span>
+        </PropRow>
+        <PropRow label="Iterations">
+          <span className="text-xs font-mono text-dark-300">{sim?.solverIterations || 10}</span>
+        </PropRow>
+        <PropRow label="Timestep">
+          <span className="text-xs font-mono text-dark-300">{((sim?.dt || 1/60) * 1000).toFixed(1)} ms</span>
+        </PropRow>
+      </Section>
+
+      <Section title="Constraint Compliance">
+        <PropRow label="Stretch α">
+          <span className="text-xs font-mono text-dark-300">{(sim?.stretchCompliance || 0).toFixed(4)}</span>
+        </PropRow>
+        <PropRow label="Bend α">
+          <span className="text-xs font-mono text-dark-300">{(sim?.bendCompliance || 0).toFixed(4)}</span>
+        </PropRow>
+        <PropRow label="Damping">
+          <span className="text-xs font-mono text-dark-300">{(sim?.damping || 0.98).toFixed(3)}</span>
+        </PropRow>
+        <PropRow label="Friction">
+          <span className="text-xs font-mono text-dark-300">{(sim?.friction || 0.5).toFixed(2)}</span>
+        </PropRow>
+      </Section>
+
+      <Section title="Material Binding">
+        <PropRow label="Active">
+          <span className="text-xs font-bold text-brand-400">{materialPreset.name}</span>
+        </PropRow>
+        <PropRow label="Assign">
+          <select
+            value={materialPreset.id}
+            onChange={(e) => {
+              const m = presets.find(p => p.id === e.target.value);
+              if (m) {
+                setMaterialPreset(m);
+                if (sim) sim.setMaterial(m);
+              }
+            }}
+            className="input-field !py-1.5 text-xs"
+          >
+            {presets.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </PropRow>
+      </Section>
     </div>
   );
 };

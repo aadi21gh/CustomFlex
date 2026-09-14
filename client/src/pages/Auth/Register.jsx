@@ -39,7 +39,7 @@ const Register = () => {
     setIsLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      toast.success('Welcome to CustomFlex! 🎨');
+      toast.success('Welcome to Crexza! ✨');
       navigate('/choose');
     } catch (err) {
       toast.error(getErrorMessage(err));

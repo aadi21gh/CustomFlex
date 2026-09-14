@@ -69,7 +69,7 @@ app.use(passport.initialize());
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'CustomFlex API is running 🚀', timestamp: new Date() });
+  res.json({ success: true, message: 'Crexza API is running 🚀', timestamp: new Date() });
 });
 
 // Routes
@@ -104,7 +104,7 @@ cron.schedule('0 * * * *', async () => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`\n🚀 CustomFlex API running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`\n🚀 Crexza API running on port ${PORT} in ${process.env.NODE_ENV} mode`);
   console.log(`📍 Health check: http://localhost:${PORT}/api/health\n`);
 });
 

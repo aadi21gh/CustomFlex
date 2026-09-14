@@ -92,21 +92,21 @@ const PostCard = ({ post, onLikeToggle, onBookmarkToggle }) => {
           )}
 
           {/* Views */}
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white/80" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
-            <Eye className="w-3 h-3" />
+          <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-[#F7F3EB]" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+            <Eye className="w-3.5 h-3.5 text-[#F7F3EB]" />
             {formatCount(post.viewsCount || 0)}
           </div>
 
           {/* Hover overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-4">
-              <div className="text-white text-center">
-                <Heart className={`w-6 h-6 mx-auto mb-1 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                <span className="text-xs font-semibold">{formatCount(post.likesCount || 0)}</span>
+              <div className="text-[#F7F3EB] text-center">
+                <Heart className={`w-6 h-6 mx-auto mb-1 ${post.isLiked ? 'fill-red-400 text-red-400' : 'text-[#F7F3EB]'}`} />
+                <span className="text-xs font-bold text-[#F7F3EB]">{formatCount(post.likesCount || 0)}</span>
               </div>
-              <div className="text-white text-center">
-                <MessageCircle className="w-6 h-6 mx-auto mb-1" />
-                <span className="text-xs font-semibold">{formatCount(post.commentsCount || 0)}</span>
+              <div className="text-[#F7F3EB] text-center">
+                <MessageCircle className="w-6 h-6 mx-auto mb-1 text-[#F7F3EB]" />
+                <span className="text-xs font-bold text-[#F7F3EB]">{formatCount(post.commentsCount || 0)}</span>
               </div>
             </div>
           </div>

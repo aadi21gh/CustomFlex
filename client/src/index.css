@@ -189,7 +189,10 @@
     @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold;
     background: rgba(199, 109, 74, 0.1);
     border: 1px solid rgba(199, 109, 74, 0.25);
-    color: #C76D4A;
+    color: #C76D4A !important;
+  }
+  .tag * {
+    color: #C76D4A !important;
   }
 
   /* Studio toolbar button */
@@ -230,34 +233,37 @@
     color: #5B4636 !important;
   }
 
+  .hover\:text-white:hover {
+    color: #C76D4A !important;
+  }
+
+  /* Solid dark elements where text MUST be light cream */
   .btn-primary,
   .btn-primary *,
   .btn-danger,
   .btn-danger *,
-  .tag,
-  .tag *,
   .avatar,
+  .avatar *,
   .toast-container,
   .toast-container *,
-  .bg-dark-900,
-  .bg-dark-900 *,
   .bg-brand-500,
+  .bg-brand-500 *,
   .bg-brand-600,
+  .bg-brand-600 *,
   .bg-brand-700,
+  .bg-brand-700 *,
   .bg-brand-800,
+  .bg-brand-800 *,
   .bg-brand-900,
-  .bg-purple-500,
+  .bg-brand-900 *,
   .bg-purple-600,
-  .bg-emerald-500,
+  .bg-purple-600 *,
   .bg-emerald-600,
+  .bg-emerald-600 *,
   .bg-red-500,
+  .bg-red-500 *,
   .bg-red-600,
-  .bg-white,
-  .bg-white *,
-  [style*="background-color: rgb(99"],
-  [style*="background-color: rgb(139"],
-  [style*="background: linear-gradient"],
-  .absolute.top-3.right-3.flex.items-center,
+  .bg-red-600 *,
   .absolute.bottom-0.left-0.right-0.bg-gradient-to-t,
   .absolute.bottom-0.left-0.right-0.bg-gradient-to-t * {
     color: #F7F3EB !important;
@@ -324,29 +330,7 @@
   transform: translateY(0);
 }
 
-/* ─── Studio Dark Theme Overrides ──────────────────────────────────────────── */
-/* The studio uses a dark bg — override the warm light theme text-white rule */
-.h-screen.bg-dark-950 .text-white,
-.h-screen.bg-dark-950 .text-white *,
-[class*="bg-dark-950"] .text-white {
-  color: #F7F3EB !important;
-}
-
-/* Studio panels — ensure text readability on dark background */
-.h-screen.bg-dark-950 .input-field {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #F7F3EB !important;
-}
-.h-screen.bg-dark-950 .input-field:focus {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(199, 109, 74, 0.6);
-  box-shadow: 0 0 0 3px rgba(199, 109, 74, 0.15);
-}
-.h-screen.bg-dark-950 .input-field::placeholder {
-  color: rgba(255, 255, 255, 0.3) !important;
-}
-
+/* ─── Studio Helpers ─────────────────────────────────────────────────────── */
 /* Product selector strip */
 .h-screen.bg-dark-950 .text-2xs {
   font-size: 0.65rem;

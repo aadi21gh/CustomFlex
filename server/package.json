@@ -1,7 +1,7 @@
 {
-  "name": "customflex-server",
+  "name": "crexza-server",
   "version": "1.0.0",
-  "description": "CustomFlex C2B2C marketplace backend API",
+  "description": "Crexza C2B2C marketplace backend API",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",

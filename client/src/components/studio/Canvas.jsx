@@ -128,8 +128,12 @@ const StudioCanvas = ({ category }) => {
       if (obj && isTemplateObject(obj)) return;
 
       if (obj && !isTemplateObject(obj) && obj.id !== '__grid__') {
+        // Tag object with current design side (front or back)
+        if (!obj.side) {
+          obj.side = activeSide;
+        }
         // Enforce strict design zone clipping on added user objects
-        obj.clipPath = createDesignZoneClipPath(productType);
+        obj.clipPath = createDesignZoneClipPath(productType, activeSide);
       }
 
       if (obj && obj.type === 'path' && !obj.id) {
@@ -177,8 +181,8 @@ const StudioCanvas = ({ category }) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
         if (canvas._clipboard) {
           canvas._clipboard.clone((cloned) => {
-            cloned.set({ left: cloned.left + 20, top: cloned.top + 20, id: Date.now() });
-            cloned.clipPath = createDesignZoneClipPath(productType);
+            cloned.set({ left: cloned.left + 20, top: cloned.top + 20, id: Date.now(), side: activeSide });
+            cloned.clipPath = createDesignZoneClipPath(productType, activeSide);
             canvas.add(cloned);
             canvas.setActiveObject(cloned);
             canvas.renderAll();
@@ -199,7 +203,7 @@ const StudioCanvas = ({ category }) => {
     document.addEventListener('keydown', handleKeyboard);
 
     // Render product template & apply clip path
-    renderProductTemplate(canvas, productType, productColor, dims.width, dims.height);
+    renderProductTemplate(canvas, productType, productColor, dims.width, dims.height, activeSide);
 
     pushHistory();
 
@@ -209,22 +213,28 @@ const StudioCanvas = ({ category }) => {
     };
   }, [category]);
 
-  // Re-render product template & update clip path when product type or color changes
+  // Re-render product template & update clip path when product type, color, or active side changes
   useEffect(() => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
-    renderProductTemplate(canvas, productType, productColor, dims.width, dims.height);
+    renderProductTemplate(canvas, productType, productColor, dims.width, dims.height, activeSide);
 
-    // Re-apply strict design zone clip path to all user objects
-    const clipPath = createDesignZoneClipPath(productType);
+    // Toggle user objects visibility based on activeSide
+    const clipPath = createDesignZoneClipPath(productType, activeSide);
     canvas.getObjects().forEach((obj) => {
       if (!isTemplateObject(obj) && obj.id !== '__grid__') {
+        if (!obj.side) {
+          obj.side = 'front';
+        }
+        obj.visible = (obj.side === activeSide);
         obj.clipPath = clipPath;
       }
     });
+    canvas.discardActiveObject();
     canvas.renderAll();
+    syncLayers();
     notifyTextureUpdate();
-  }, [productType, productColor]);
+  }, [productType, productColor, activeSide]);
 
   // Handle Brush/Draw mode settings
   useEffect(() => {

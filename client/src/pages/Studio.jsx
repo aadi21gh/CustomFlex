@@ -1,10 +1,12 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SmileyMark } from '@/components/common/BrandLogo';
 import {
   Save, Undo2, Redo2, ZoomIn, ZoomOut, Grid3X3, Eye, EyeOff,
   Download, Share2, ArrowLeft, Loader2, ShoppingCart, Palette, Settings,
-  Check, Cloud, CloudLightning
+  Check, Cloud, CloudLightning, Box, Scissors, Layers, Sliders,
+  Monitor, Activity, Gauge, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StudioProvider, useStudio } from '@/context/StudioContext';
@@ -17,26 +19,44 @@ import StickerLibrary from '@/components/studio/StickerLibrary';
 import AIDesigner from '@/components/studio/AIDesigner';
 import ProductPreview from '@/components/studio/ProductPreview';
 import Product3DViewer from '@/components/studio/Product3DViewer';
-import { Box } from 'lucide-react';
+import PatternEditor from '@/components/studio/PatternEditor';
+import MaterialPreview from '@/components/studio/MaterialPreview';
+import { STARTER_TEMPLATES } from '@/components/studio/templatesData';
+import TemplatePickerModal from '@/components/studio/TemplatePickerModal';
+import QuickTemplateCustomizer from '@/components/studio/QuickTemplateCustomizer';
+import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/axios';
 
 // Clipboard state helper
 let localClipboardObj = null;
 
 const StudioContent = ({ category, designId: editId }) => {
+  const { user, isAdmin } = useAuth();
+  const isUserAdmin = Boolean(isAdmin || user?.role === 'admin');
+
   const {
     fabricRef, undo, redo, canUndo, canRedo, isSaving, saveDesign,
     designTitle, setDesignTitle, setCategory, setDesignId, zoom, setZoom,
     gridVisible, setGridVisible, pushHistory, syncLayers,
+    // New state
+    activeMainView, setActiveMainView,
+    activeRightPanel, setActiveRightPanel,
+    simulationRunning, simulationStats,
+    selectedSceneObject, activePatternPiece,
+    productType, setProductType,
   } = useStudio();
   const navigate = useNavigate();
-  const [leftPanel, setLeftPanel] = useState('shapes'); // 'shapes' | 'ai'
+  const [leftPanel, setLeftPanel] = useState('shapes');
   const [showPreview, setShowPreview] = useState(false);
-  const [show3DViewport, setShow3DViewport] = useState(true); // Default 3D Viewport enabled
   const [isLoadingDesign, setIsLoadingDesign] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'dirty'
+  const [saveStatus, setSaveStatus] = useState('saved');
+
+  // Easy Template mode vs Pro Studio mode (Pro Mode is only accessible to admins)
+  const [customizerMode, setCustomizerMode] = useState(isUserAdmin && editId ? 'pro' : 'template');
+  const [selectedTemplate, setSelectedTemplate] = useState(() => STARTER_TEMPLATES[0]);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   // Set category on mount
   useEffect(() => {
@@ -57,8 +77,6 @@ const StudioContent = ({ category, designId: editId }) => {
               fabricRef.current.renderAll();
               syncLayers();
               pushHistory();
-              // Zoom to fit after loaded
-              handleZoomToFit();
             });
           }
         } catch (err) {
@@ -71,7 +89,7 @@ const StudioContent = ({ category, designId: editId }) => {
     }
   }, [editId]);
 
-  // Autosave monitor - sets status to dirty when modifications occur
+  // Autosave monitor
   useEffect(() => {
     if (!fabricRef.current) return;
     const markDirty = () => setSaveStatus('dirty');
@@ -129,18 +147,27 @@ const StudioContent = ({ category, designId: editId }) => {
   const handleZoomToFit = () => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
-    // Simple fit logic based on wrapper dimensions (standard sizing)
     setZoom(1);
     canvas.setZoom(1);
     canvas.renderAll();
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (checkoutMeta = {}) => {
     setSaveStatus('saving');
     const savedDesign = await saveDesign(false);
     if (savedDesign) {
       setSaveStatus('saved');
-      navigate(`/checkout?designId=${savedDesign._id}&category=${category}`);
+      const params = new URLSearchParams({
+        designId: savedDesign._id,
+        category: category || 'clothing',
+      });
+      if (checkoutMeta?.material?.id) {
+        params.set('material', checkoutMeta.material.id);
+      }
+      if (checkoutMeta?.totalPrice) {
+        params.set('price', checkoutMeta.totalPrice);
+      }
+      navigate(`/checkout?${params.toString()}`);
     } else {
       setSaveStatus('dirty');
     }
@@ -153,7 +180,6 @@ const StudioContent = ({ category, designId: editId }) => {
       const canvas = fabricRef.current;
       const activeObj = canvas.getActiveObject();
 
-      // Skip shortcuts if the user is typing in a text field
       const activeEl = document.activeElement;
       const isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.contentEditable === 'true';
       const isITextEditing = activeObj && activeObj.isEditing;
@@ -162,7 +188,6 @@ const StudioContent = ({ category, designId: editId }) => {
         return;
       }
 
-      // 1. Copy (Ctrl + C)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
         e.preventDefault();
         if (activeObj) {
@@ -173,7 +198,6 @@ const StudioContent = ({ category, designId: editId }) => {
         }
       }
 
-      // 2. Paste (Ctrl + V)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
         e.preventDefault();
         if (localClipboardObj) {
@@ -189,12 +213,11 @@ const StudioContent = ({ category, designId: editId }) => {
             canvas.renderAll();
             pushHistory();
             syncLayers();
-            localClipboardObj = cloned; // set up next paste
+            localClipboardObj = cloned;
           });
         }
       }
 
-      // 3. Duplicate (Ctrl + D)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         if (activeObj) {
@@ -214,19 +237,16 @@ const StudioContent = ({ category, designId: editId }) => {
         }
       }
 
-      // 4. Undo (Ctrl + Z)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undo();
       }
 
-      // 5. Redo (Ctrl + Y)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault();
         redo();
       }
 
-      // 6. Delete / Backspace (Del / Backspace)
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         if (activeObj) {
@@ -238,7 +258,6 @@ const StudioContent = ({ category, designId: editId }) => {
         }
       }
 
-      // 7. Escape (Deselct selection)
       if (e.key === 'Escape') {
         e.preventDefault();
         canvas.discardActiveObject();
@@ -250,15 +269,48 @@ const StudioContent = ({ category, designId: editId }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [fabricRef.current, undo, redo, pushHistory, syncLayers]);
 
+  // View tab configs
+  const mainViewTabs = [
+    { id: 'view3d', icon: Box, label: '3D View' },
+    { id: 'canvas2d', icon: Monitor, label: '2D Canvas' },
+    { id: 'patternDraft', icon: Scissors, label: 'Pattern' },
+  ];
+
+  // Right panel tab configs
+  const rightPanelTabs = [
+    { id: 'objectBrowser', icon: Layers, label: 'Objects' },
+    { id: 'materialPreview', icon: Palette, label: 'Material' },
+    { id: 'properties', icon: Sliders, label: 'Properties' },
+  ];
+
+  // Determine which properties panel to show
+  const getPropertiesContent = () => {
+    // If a simulation object is selected
+    if (selectedSceneObject && selectedSceneObject.startsWith('__sim_')) {
+      return <SimulationPropertiesPanel />;
+    }
+    // If a pattern piece is selected
+    if (activePatternPiece || (selectedSceneObject && selectedSceneObject.startsWith('__pattern_'))) {
+      return <PatternPropertiesPanel />;
+    }
+    // Default: design object properties
+    return <PropertiesPanel />;
+  };
+
   return (
     <div className="h-screen bg-dark-950 flex flex-col overflow-hidden">
-      {/* Top Bar */}
+      {/* ══════════════════════════════════════════════════════════════════
+          TOP BAR
+          ══════════════════════════════════════════════════════════════════ */}
       <div className="h-14 flex-shrink-0 flex items-center gap-2 sm:gap-4 px-2.5 sm:px-4 border-b border-glass-border bg-dark-900/80 backdrop-blur-xl">
         {/* Left */}
         <div className="flex items-center gap-1.5 sm:gap-3 flex-1 sm:flex-initial min-w-0">
           <button onClick={() => navigate(-1)} className="toolbar-btn animate-fadeIn" title="Go back">
             <ArrowLeft className="w-4 h-4" />
           </button>
+          <Link to="/" title="Crexza Home (:" className="hover:scale-105 transition-transform flex-shrink-0">
+            <SmileyMark size="sm" />
+          </Link>
           <button
             onClick={() => {
               setShowLeftPanel(!showLeftPanel);
@@ -270,7 +322,6 @@ const StudioContent = ({ category, designId: editId }) => {
             <Palette className="w-4 h-4" />
           </button>
           <div className="w-px h-5 bg-glass-border hidden sm:block" />
-          {/* Editable title */}
           <input
             value={designTitle}
             onChange={(e) => setDesignTitle(e.target.value)}
@@ -301,28 +352,87 @@ const StudioContent = ({ category, designId: editId }) => {
           </div>
         </div>
 
-        {/* Center — History & Zoom */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={undo} disabled={!canUndo} className="toolbar-btn disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
-          <button onClick={redo} disabled={!canRedo} className="toolbar-btn disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
-          
-          {/* Zoom controls hidden on mobile */}
-          <div className="hidden md:flex items-center gap-1">
-            <div className="w-px h-5 bg-glass-border mx-1" />
-            <button onClick={() => handleZoom('out')} className="toolbar-btn" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
-            <span className="text-xs text-dark-300 w-10 text-center font-mono cursor-pointer hover:text-white transition-colors" title="Zoom to Fit" onClick={handleZoomToFit}>
-              {Math.round(zoom * 100)}%
-            </span>
-            <button onClick={() => handleZoom('in')} className="toolbar-btn" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
-          </div>
+        {/* Center — Mode Switcher (Admin Only) & Pro Tools */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Mode Switcher: Easy Mode vs Pro Studio (Admin Only) */}
+          {isUserAdmin && (
+            <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-dark-900/60 border border-glass-border">
+              <button
+                onClick={() => setCustomizerMode('template')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  customizerMode === 'template'
+                    ? 'bg-brand-500 text-white shadow-sm'
+                    : 'text-dark-400 hover:text-brand-500'
+                }`}
+                title="Simple template customization"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Easy Mode</span>
+              </button>
+              <button
+                onClick={() => setCustomizerMode('pro')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  customizerMode === 'pro'
+                    ? 'bg-brand-500 text-white shadow-sm'
+                    : 'text-dark-400 hover:text-brand-500'
+                }`}
+                title="Full design canvas & 3D tools (Admin)"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Pro Studio</span>
+              </button>
+            </div>
+          )}
 
-          <div className="w-px h-5 bg-glass-border mx-1 hidden sm:block" />
-          <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''} hidden sm:flex`} title="Toggle grid">
-            <Grid3X3 className="w-4 h-4" />
-          </button>
-          <button onClick={() => setShow3DViewport(!show3DViewport)} className={`toolbar-btn ${show3DViewport ? 'active bg-brand-500/20 text-brand-300' : ''}`} title="Interactive 3D Studio (Rotate 360°)">
-            <Box className="w-4 h-4" />
-          </button>
+          {/* Pro Tools (only visible in Pro Mode) */}
+          {customizerMode === 'pro' ? (
+            <>
+              {/* View Switcher Tabs */}
+              <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-dark-950/60 border border-glass-border">
+                {mainViewTabs.map(({ id, icon: Icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveMainView(id)}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-2xs font-bold transition-all ${
+                      activeMainView === id
+                        ? 'bg-brand-500 text-white shadow-sm'
+                        : 'text-dark-400 hover:text-brand-500'
+                    }`}
+                    title={label}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="hidden lg:inline">{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={undo} disabled={!canUndo} className="toolbar-btn disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
+              <button onClick={redo} disabled={!canRedo} className="toolbar-btn disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
+              
+              <div className="hidden md:flex items-center gap-1">
+                <div className="w-px h-5 bg-glass-border mx-1" />
+                <button onClick={() => handleZoom('out')} className="toolbar-btn" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
+                <span className="text-xs text-dark-300 w-10 text-center font-mono cursor-pointer hover:text-brand-500 transition-colors" title="Zoom to Fit" onClick={handleZoomToFit}>
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button onClick={() => handleZoom('in')} className="toolbar-btn" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
+              </div>
+
+              <div className="w-px h-5 bg-glass-border mx-1 hidden sm:block" />
+              <button onClick={() => setGridVisible(!gridVisible)} className={`toolbar-btn ${gridVisible ? 'active' : ''} hidden sm:flex`} title="Toggle grid">
+                <Grid3X3 className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsTemplateModalOpen(true)}
+              className="toolbar-btn !w-auto px-3 text-xs font-semibold gap-1.5 text-brand-500 hover:text-brand-600 bg-brand-500/10 border border-brand-500/20"
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>Templates</span>
+            </button>
+          )}
+
           <button onClick={() => setShowPreview(!showPreview)} className={`toolbar-btn ${showPreview ? 'active' : ''}`} title="Product preview">
             {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -351,10 +461,10 @@ const StudioContent = ({ category, designId: editId }) => {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold text-white transition-all bg-white/5 border border-glass-border hover:bg-white/10"
+            className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-xs flex items-center gap-1 sm:gap-1.5"
             title="Save design"
           >
-            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-500" /> : <Save className="w-3.5 h-3.5 text-brand-500" />}
             <span>Save</span>
           </button>
           <button
@@ -369,21 +479,33 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Tap-to-close backdrop overlay for mobile view drawers */}
-        {(showLeftPanel || showRightPanel) && (
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs z-10 md:hidden animate-fadeIn"
-            onClick={() => {
-              setShowLeftPanel(false);
-              setShowRightPanel(false);
-            }}
-          />
-        )}
-        {/* Left Panel */}
+      {/* ══════════════════════════════════════════════════════════════════
+          MAIN LAYOUT: Quick Creator vs Pro Studio
+          ══════════════════════════════════════════════════════════════════ */}
+      {customizerMode === 'template' ? (
+        <QuickTemplateCustomizer
+          template={selectedTemplate}
+          category={category}
+          onSwitchToPro={() => isUserAdmin && setCustomizerMode('pro')}
+          onCheckout={handleCheckout}
+          isSaving={isSaving}
+        />
+      ) : (
+        <>
+          <div className="flex flex-1 overflow-hidden relative">
+          {/* Tap-to-close backdrop overlay for mobile view drawers */}
+          {(showLeftPanel || showRightPanel) && (
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-xs z-10 md:hidden animate-fadeIn"
+              onClick={() => {
+                setShowLeftPanel(false);
+                setShowRightPanel(false);
+              }}
+            />
+          )}
+
+        {/* ── Left Panel (Elements/Stickers/AI) ─────────────────────── */}
         <div className={`w-64 flex-shrink-0 flex flex-col border-r border-glass-border bg-dark-950/95 fixed md:relative z-20 top-14 md:top-0 bottom-0 left-0 transition-transform duration-300 md:translate-x-0 ${showLeftPanel ? 'translate-x-0' : '-translate-x-full'}`}>
-          {/* Tab switcher */}
           <div className="flex border-b border-glass-border">
             {[
               { id: 'shapes', label: 'Elements' },
@@ -393,7 +515,7 @@ const StudioContent = ({ category, designId: editId }) => {
               <button
                 key={id}
                 onClick={() => setLeftPanel(id)}
-                className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${leftPanel === id ? 'text-brand-400 border-b-2 border-brand-500' : 'text-dark-400 hover:text-white'}`}
+                className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${leftPanel === id ? 'text-brand-500 border-b-2 border-brand-500 font-bold' : 'text-dark-400 hover:text-brand-500'}`}
               >
                 {label}
               </button>
@@ -410,39 +532,137 @@ const StudioContent = ({ category, designId: editId }) => {
           </div>
         </div>
 
-        {/* Canvas & 3D Interactive Viewport Container */}
+        {/* ── Main Viewport Area ─────────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Toolbar */}
-          <StudioToolbar />
+          {/* Mobile view switcher (md:hidden) */}
+          <div className="flex md:hidden items-center gap-0.5 p-1 border-b border-glass-border bg-dark-900/40">
+            {mainViewTabs.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => setActiveMainView(id)}
+                className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-2xs font-bold transition-all ${
+                  activeMainView === id
+                    ? 'bg-brand-500 text-dark-950'
+                    : 'text-dark-400'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {label}
+              </button>
+            ))}
+          </div>
 
-          {/* Studio Workspace Area (Split / Single View) */}
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-            {/* 2D Design Canvas */}
-            <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${show3DViewport ? 'md:w-1/2' : 'w-full'}`}>
+          {/* Toolbar (for 2D Canvas mode) */}
+          {activeMainView === 'canvas2d' && <StudioToolbar />}
+
+          {/* Active View Content */}
+          <div className="flex-1 overflow-hidden relative">
+            {activeMainView === 'view3d' && (
+              <Product3DViewer />
+            )}
+            {activeMainView === 'canvas2d' && (
               <StudioCanvas category={category} />
-            </div>
-
-            {/* Interactive 3D Rotatable Model Viewport */}
-            {show3DViewport && (
-              <div className="md:w-1/2 h-64 md:h-full border-t md:border-t-0 md:border-l border-glass-border overflow-hidden relative transition-all duration-300">
-                <Product3DViewer />
-              </div>
+            )}
+            {activeMainView === 'patternDraft' && (
+              <PatternEditor />
             )}
           </div>
         </div>
 
-        {/* Right Panel */}
+        {/* ── Right Sidebar ──────────────────────────────────────────── */}
         <div className={`w-72 flex-shrink-0 flex flex-col border-l border-glass-border bg-dark-950/95 fixed md:relative z-20 top-14 md:top-0 bottom-0 right-0 transition-transform duration-300 md:translate-x-0 ${showRightPanel ? 'translate-x-0' : 'translate-x-full'}`}>
-          {/* Layers Panel (top) */}
-          <div className="h-64 border-b border-glass-border">
-            <LayersPanel />
+          {/* Right panel tab bar */}
+          <div className="flex border-b border-glass-border flex-shrink-0">
+            {rightPanelTabs.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => setActiveRightPanel(id)}
+                className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition-colors ${
+                  activeRightPanel === id
+                    ? 'text-brand-500 border-b-2 border-brand-500 font-bold'
+                    : 'text-dark-400 hover:text-brand-500'
+                }`}
+                title={label}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">{label}</span>
+              </button>
+            ))}
           </div>
 
+          {/* Right panel content */}
           <div className="flex-1 overflow-y-auto">
-            <PropertiesPanel />
+            {activeRightPanel === 'objectBrowser' && (
+              <LayersPanel />
+            )}
+            {activeRightPanel === 'materialPreview' && (
+              <MaterialPreview />
+            )}
+            {activeRightPanel === 'properties' && (
+              <PropertiesPanel />
+            )}
           </div>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          BOTTOM STATUS BAR
+          ══════════════════════════════════════════════════════════════════ */}
+      <div className="h-7 flex-shrink-0 flex items-center gap-4 px-3 border-t border-glass-border bg-dark-900/60 text-2xs text-dark-500 select-none">
+        {/* Simulation status */}
+        <div className="flex items-center gap-1.5">
+          <Activity className="w-3 h-3" />
+          <span>XPBD:</span>
+          {simulationRunning ? (
+            <span className="text-emerald-400 font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Running
+            </span>
+          ) : (
+            <span className="text-dark-600">Paused</span>
+          )}
+        </div>
+
+        <div className="w-px h-3 bg-glass-border" />
+
+        {/* Strain */}
+        <div className="flex items-center gap-1">
+          <Gauge className="w-3 h-3" />
+          <span>Strain: </span>
+          <span className="font-mono" style={{
+            color: simulationStats.maxStrain > 0.5 ? '#ef4444' : simulationStats.maxStrain > 0.2 ? '#eab308' : '#22c55e'
+          }}>
+            {(simulationStats.maxStrain * 100).toFixed(1)}%
+          </span>
+        </div>
+
+        {/* FPS */}
+        <div className="flex items-center gap-1">
+          <span>FPS:</span>
+          <span className="font-mono text-dark-400">{simulationStats.fps}</span>
+        </div>
+
+        {/* Solver */}
+        <div className="hidden sm:flex items-center gap-1">
+          <span>Solver:</span>
+          <span className="font-mono text-dark-400">{simulationStats.solverIterationsUsed} iter</span>
+        </div>
+
+        {/* Seam gap */}
+        <div className="hidden sm:flex items-center gap-1">
+          <span>Gap:</span>
+          <span className="font-mono text-dark-400">{(simulationStats.maxSeamGap * 1000).toFixed(1)}mm</span>
+        </div>
+
+        {/* View mode */}
+        <div className="ml-auto flex items-center gap-1">
+          <span className="text-dark-600">{activeMainView === 'view3d' ? '3D View' : activeMainView === 'canvas2d' ? '2D Canvas' : 'Pattern'}</span>
+          <span className="text-dark-600">|</span>
+          <span className="text-dark-600 capitalize">{category}</span>
+        </div>
+      </div>
+      </>
+      )}
 
       {/* Product Preview Overlay */}
       <AnimatePresence>
@@ -460,7 +680,7 @@ const StudioContent = ({ category, designId: editId }) => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <ProductPreview category={category} />
+              <ProductPreview category={category} onClose={() => setShowPreview(false)} />
             </motion.div>
           </motion.div>
         )}
@@ -475,6 +695,24 @@ const StudioContent = ({ category, designId: editId }) => {
           </div>
         </div>
       )}
+
+      {/* Template Picker Modal */}
+      <TemplatePickerModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onSelectTemplate={(tmpl, prodType) => {
+          setSelectedTemplate(tmpl);
+          if (prodType) {
+            setProductType(prodType);
+          }
+          setCustomizerMode('template');
+          setIsTemplateModalOpen(false);
+        }}
+        onSelectBlank={() => {
+          setCustomizerMode('pro');
+          setIsTemplateModalOpen(false);
+        }}
+      />
     </div>
   );
 };

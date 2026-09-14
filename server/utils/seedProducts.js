@@ -1,5 +1,5 @@
 /**
- * Standalone re-seed script for CustomFlex products.
+ * Standalone re-seed script for Crexza products.
  * Wipes existing products and inserts the full catalog fresh.
  *
  * Usage:

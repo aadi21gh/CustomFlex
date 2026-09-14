@@ -307,7 +307,7 @@ const Checkout = () => {
   const [design, setDesign] = useState(null);
 
   const [options, setOptions] = useState({
-    material: DEFAULT_MATERIALS[category] || 'standard',
+    material: params.get('material') || DEFAULT_MATERIALS[category] || 'standard',
     printArea: category === 'clothing' ? 'front' : 'standard',
     size: '',
     color: '',
