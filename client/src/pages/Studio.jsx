@@ -24,6 +24,7 @@ import ProductPreview from '@/components/studio/ProductPreview';
 import AIModelPhotoshootModal from '@/components/studio/AIModelPhotoshootModal';
 import WebARTryOnModal from '@/components/studio/WebARTryOnModal';
 import PhygitalCertificateModal from '@/components/studio/PhygitalCertificateModal';
+import AITypographyModal from '@/components/studio/AITypographyModal';
 import api from '@/lib/axios';
 
 // Clipboard state helper
@@ -49,6 +50,7 @@ const StudioContent = ({ category, designId: editId }) => {
   const [showPhotoshoot, setShowPhotoshoot] = useState(false);
   const [showARTryOn, setShowARTryOn] = useState(false);
   const [showPhygital, setShowPhygital] = useState(false);
+  const [showTypography, setShowTypography] = useState(false);
   const [isLoadingDesign, setIsLoadingDesign] = useState(false);
   const [showRightInspector, setShowRightInspector] = useState(true);
   const [saveStatus, setSaveStatus] = useState('saved');
@@ -419,6 +421,16 @@ const StudioContent = ({ category, designId: editId }) => {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* AI Streetwear Typography */}
+          <button
+            onClick={() => setShowTypography(true)}
+            className="px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm"
+            title="AI Streetwear Typography & Layout Generator"
+          >
+            <Type className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">AI Typography</span>
+          </button>
+
           {/* AI Virtual Photoshoot */}
           <button
             onClick={() => setShowPhotoshoot(true)}
@@ -605,6 +617,12 @@ const StudioContent = ({ category, designId: editId }) => {
         isOpen={showPhygital}
         onClose={() => setShowPhygital(false)}
         designId={editId || 'crx-8891'}
+      />
+
+      {/* ✨ AI Streetwear Typography & Layout Generator Modal */}
+      <AITypographyModal
+        isOpen={showTypography}
+        onClose={() => setShowTypography(false)}
       />
 
       {/* Loading Overlay */}

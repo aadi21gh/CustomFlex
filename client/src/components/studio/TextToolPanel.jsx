@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { fabric } from 'fabric';
 import { useStudio } from '@/context/StudioContext';
-import { Type, Sparkles, AlignLeft, AlignCenter, AlignRight, Bold, Italic } from 'lucide-react';
+import { Type, Sparkles, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Wand2, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AITypographyModal from '@/components/studio/AITypographyModal';
 
 const FONT_OPTIONS = [
   'Space Grotesk', 'Inter', 'Poppins', 'Montserrat',
@@ -78,6 +79,7 @@ const TextToolPanel = () => {
   const [customText, setCustomText] = useState('');
   const [selectedFont, setSelectedFont] = useState('Space Grotesk');
   const [selectedColor, setSelectedColor] = useState('#1A1A1A');
+  const [showAITypoModal, setShowAITypoModal] = useState(false);
 
   const isTextSelected = activeObject && (activeObject.type === 'i-text' || activeObject.type === 'text');
 
@@ -145,9 +147,30 @@ const TextToolPanel = () => {
 
   return (
     <div className="p-4 space-y-5 overflow-y-auto h-full select-none">
+      {/* 🚀 AI Streetwear Typography Launcher Banner */}
+      <div
+        onClick={() => setShowAITypoModal(true)}
+        className="p-3.5 rounded-2xl bg-gradient-to-br from-brand-500/20 via-purple-500/15 to-dark-900 border border-brand-500/40 hover:border-brand-500 hover:shadow-lg hover:shadow-brand-500/15 cursor-pointer transition-all group"
+      >
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="p-1 rounded-lg bg-brand-500 text-white shadow-sm">
+              <Wand2 className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-black text-white tracking-wide">AI Typography Studio</span>
+          </div>
+          <span className="text-3xs font-mono font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase">
+            NEW
+          </span>
+        </div>
+        <p className="text-2xs text-dark-300 group-hover:text-white transition-colors">
+          1-click 90s Bootleg, Japanese Kanji, Cyber Gothic & Arched layouts with distress textures
+        </p>
+      </div>
+
       {/* Quick Add Buttons */}
       <div>
-        <p className="text-2xs font-semibold text-dark-500 uppercase tracking-widest mb-2.5">Add Text</p>
+        <p className="text-2xs font-semibold text-dark-500 uppercase tracking-widest mb-2.5">Basic Text</p>
         <div className="space-y-2">
           <button
             onClick={() => addText('Add Heading', 36, '900')}
@@ -267,6 +290,12 @@ const TextToolPanel = () => {
           ))}
         </div>
       </div>
+
+      {/* AI Typography Modal */}
+      <AITypographyModal
+        isOpen={showAITypoModal}
+        onClose={() => setShowAITypoModal(false)}
+      />
     </div>
   );
 };
