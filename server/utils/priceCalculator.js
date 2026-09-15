@@ -49,19 +49,31 @@ const BASE_PRICES = {
 const MATERIAL_OPTIONS = {
   // Clothing materials
   cotton:           { label: 'Cotton',           addOn: 0,    description: 'Standard 180 GSM cotton' },
+  combed_cotton:    { label: '100% Combed Cotton', addOn: 0,  description: 'Ultra-breathable 180 GSM cotton' },
   'premium-cotton': { label: 'Premium Cotton',   addOn: 120,  description: 'Soft 240 GSM combed cotton' },
   'organic-cotton': { label: 'Organic Cotton',   addOn: 200,  description: 'GOTS certified organic' },
   'oversized-cotton': { label: 'Oversized Cotton', addOn: 80, description: 'Relaxed fit 220 GSM' },
   'dry-fit':        { label: 'Dry Fit',          addOn: 150,  description: 'Moisture-wicking polyester' },
+  'french-terry':   { label: 'Heavy French Terry', addOn: 249, description: 'Plush 320 GSM French Terry' },
+  french_terry:     { label: 'Heavy French Terry', addOn: 249, description: 'Plush 320 GSM French Terry' },
+  'supima-cotton':  { label: 'Luxury Supima® Cotton', addOn: 399, description: '240 GSM long-staple Supima' },
+  supima_cotton:    { label: 'Luxury Supima® Cotton', addOn: 399, description: '240 GSM long-staple Supima' },
+  'organic-bamboo': { label: 'Organic Bamboo Blend', addOn: 299, description: '210 GSM sustainable bamboo' },
+  organic_bamboo:   { label: 'Organic Bamboo Blend', addOn: 299, description: '210 GSM sustainable bamboo' },
+  'acid-wash-fleece': { label: 'Acid-Wash Fleece', addOn: 449, description: '380 GSM thermal fleece' },
+  acid_wash_fleece: { label: 'Acid-Wash Fleece', addOn: 449, description: '380 GSM thermal fleece' },
   polyester:        { label: 'Polyester',        addOn: 60,   description: 'Durable synthetic blend' },
   silk:             { label: 'Silk',             addOn: 300,  description: 'Pure 100% mulberry silk' },
   linen:            { label: 'Linen',            addOn: 150,  description: 'Premium lightweight breathable linen' },
 
   // Artwork materials
   'matte-paper':    { label: 'Matte Paper',      addOn: 0,    description: 'Standard 250 GSM matte' },
+  fine_art_paper:   { label: 'Archival Fine Art Paper', addOn: 0, description: '280 GSM acid-free matte' },
   'glossy-paper':   { label: 'Glossy Paper',     addOn: 50,   description: 'High-gloss 300 GSM' },
   'canvas':         { label: 'Canvas',           addOn: 300,  description: 'Artist-grade stretched canvas' },
+  textured_canvas:  { label: 'Textured Gallery Canvas', addOn: 300, description: '380 GSM heavy canvas' },
   'acrylic':        { label: 'Acrylic Glass',    addOn: 500,  description: '4mm shatter-resistant acrylic' },
+  acrylic_glass:    { label: 'High-Gloss Acrylic', addOn: 500, description: '4mm optical solid acrylic' },
   'wood':           { label: 'Wood',             addOn: 400,  description: 'Birch wood panel' },
   'metal':          { label: 'Aluminum',         addOn: 600,  description: 'Brushed aluminum sheet' },
 
@@ -70,6 +82,8 @@ const MATERIAL_OPTIONS = {
   'premium':        { label: 'Premium',          addOn: 200,  description: 'Upgraded premium material' },
   'silicone':       { label: 'Silicone',         addOn: 0,    description: 'Flexible silicone case' },
   'hard-plastic':   { label: 'Hard Plastic',     addOn: 50,   description: 'Impact-resistant polycarbonate' },
+  matte_polycarbonate: { label: 'Matte Polycarbonate', addOn: 0, description: 'Slim 1.5mm snap shell' },
+  shockproof_armor: { label: 'Shockproof Armor', addOn: 200, description: 'Dual-layer drop-tested TPU' },
   'leather':        { label: 'Leather',          addOn: 350,  description: 'Genuine leather finish' },
   'stainless-steel':{ label: 'Stainless Steel',  addOn: 250,  description: 'Brushed 316L stainless' },
 };

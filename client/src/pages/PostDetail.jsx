@@ -11,6 +11,121 @@ import { formatCount, timeAgo, getInitials, stringToColor } from '@/lib/utils';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 
+const CURATED_POSTS_MAP = {
+  'curated-1': {
+    _id: 'curated-1',
+    caption: 'Tokyo Cyberpunk Heavyweight Vintage Oversized Hoodie with custom back typography & neon sleeve accents 🔥',
+    category: 'clothing',
+    images: [{ url: '/mockups/hoodie.jpg' }],
+    user: { _id: 'u1', name: 'Elena Rostova', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 842,
+    commentsCount: 39,
+    viewsCount: 3420,
+    tags: ['cyberpunk', 'streetwear', 'hoodie', 'tokyo'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+  },
+  'curated-2': {
+    _id: 'curated-2',
+    caption: 'Minimalist Bauhaus Arch Artwork Print on 300gsm matte art paper. Customized in Crexza Studio 🎨',
+    category: 'artwork',
+    images: [{ url: '/mockups/poster.jpg' }],
+    user: { _id: 'u2', name: 'Marcus Rivera', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 620,
+    commentsCount: 28,
+    viewsCount: 2890,
+    tags: ['bauhaus', 'minimalism', 'poster', 'print'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+  },
+  'curated-3': {
+    _id: 'curated-3',
+    caption: 'Botanical Flora Heavy Canvas Tote Bag with reinforced handles and vintage screenprint badge.',
+    category: 'accessories',
+    images: [{ url: '/mockups/totebag.jpg' }],
+    user: { _id: 'u3', name: 'Aisha Patel', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 512,
+    commentsCount: 19,
+    viewsCount: 1940,
+    tags: ['totebag', 'botanical', 'canvas', 'organic'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+  },
+  'curated-4': {
+    _id: 'curated-4',
+    caption: 'Desi Diva Pop-Art Streetwear Classic Boxy Tee in organic ring-spun cotton.',
+    category: 'clothing',
+    images: [{ url: '/mockups/tshirt.jpg' }],
+    user: { _id: 'u4', name: 'Kavya Sharma', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 780,
+    commentsCount: 45,
+    viewsCount: 4100,
+    tags: ['popart', 'streetwear', 'tee', 'desidiva'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
+  },
+  'curated-5': {
+    _id: 'curated-5',
+    caption: 'Alpine Explorer Club Crest Patch Varsity Jacket with custom embroidered chest badge.',
+    category: 'clothing',
+    images: [{ url: '/mockups/jacket.jpg' }],
+    user: { _id: 'u5', name: 'James Wu', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 934,
+    commentsCount: 52,
+    viewsCount: 5600,
+    tags: ['varsity', 'jacket', 'alpine', 'embroidery'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 36).toISOString(),
+  },
+  'curated-6': {
+    _id: 'curated-6',
+    caption: 'Frosted Acrylic Floating Frame with neon geometric typography & iridescent sheen.',
+    category: 'artwork',
+    images: [{ url: '/mockups/acrylic.jpg' }],
+    user: { _id: 'u6', name: 'Sofia Lindqvist', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 430,
+    commentsCount: 15,
+    viewsCount: 2200,
+    tags: ['acrylic', 'floatingframe', 'neon', 'modernart'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+  },
+  'curated-7': {
+    _id: 'curated-7',
+    caption: 'Vintage Washed Dad Cap with custom 3D puffy embroidered monogram crest.',
+    category: 'accessories',
+    images: [{ url: '/mockups/cap.jpg' }],
+    user: { _id: 'u7', name: 'David Kim', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 390,
+    commentsCount: 22,
+    viewsCount: 1850,
+    tags: ['dadcap', 'headwear', 'crest', 'vintage'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 60).toISOString(),
+  },
+  'curated-8': {
+    _id: 'curated-8',
+    caption: 'Sunset Mirage Premium Textured Canvas Wall Art on gallery solid wood stretcher bars.',
+    category: 'artwork',
+    images: [{ url: '/mockups/canvas.jpg' }],
+    user: { _id: 'u8', name: 'Maya Lin', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80' },
+    likesCount: 670,
+    commentsCount: 31,
+    viewsCount: 3100,
+    tags: ['canvas', 'wallart', 'sunset', 'gallery'],
+    isLiked: false,
+    isBookmarked: false,
+    createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
+  },
+};
+
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -25,6 +140,16 @@ const PostDetail = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
+        if (id && CURATED_POSTS_MAP[id]) {
+          setPost(CURATED_POSTS_MAP[id]);
+          setComments([
+            { _id: 'c1', user: { name: 'Alex Rivera' }, text: 'The print quality and texture look absolutely insane in person!', createdAt: new Date(Date.now() - 7200000).toISOString() },
+            { _id: 'c2', user: { name: 'Sarah Chen' }, text: 'Love the color palette on this one! 🔥', createdAt: new Date(Date.now() - 3600000).toISOString() },
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
         const [postRes, commentsRes] = await Promise.all([
           api.get(`/posts/${id}`),
           api.get(`/posts/${id}/comments`),
@@ -32,14 +157,18 @@ const PostDetail = () => {
         setPost(postRes.data.post);
         setComments(commentsRes.data.comments);
       } catch {
-        toast.error('Post not found');
-        navigate('/explore');
+        if (id && CURATED_POSTS_MAP[id]) {
+          setPost(CURATED_POSTS_MAP[id]);
+        } else {
+          toast.error('Post not found');
+          navigate('/explore');
+        }
       } finally {
         setIsLoading(false);
       }
     };
     fetchPost();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleLike = async () => {
     if (!isAuthenticated) { toast.error('Sign in to like posts'); return; }

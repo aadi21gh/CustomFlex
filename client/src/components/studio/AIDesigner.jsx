@@ -97,7 +97,7 @@ const PROMPT_SUGGESTIONS = {
 const MAX_HISTORY = 10;
 
 const AIDesigner = () => {
-  const { fabricRef, category, productType, productColor } = useStudio();
+  const { fabricRef, category, productType, productColor, activeSide, addCanvasObject } = useStudio();
 
   // State
   const [prompt, setPrompt] = useState('');
@@ -119,80 +119,67 @@ const AIDesigner = () => {
   const buildFullPrompt = () => {
     const parts = [prompt.trim()];
     if (style) parts.push(`${style} style`);
-    parts.push(currentMode.promptSuffix);
-    parts.push(`designed for ${productLabel} print`);
-    if (transparentBg) parts.push('transparent background, PNG, no background');
+    if (currentMode.promptSuffix) parts.push(currentMode.promptSuffix);
+    if (transparentBg) parts.push('isolated on pure transparent background, no background elements');
     return parts.join(', ');
   };
 
-  // ── Generate ──────────────────────────────────────────────────────────────
-  const generate = async () => {
-    if (!prompt.trim()) { toast.error('Please describe your design'); return; }
+  // ── Generate Design ───────────────────────────────────────────────────────
+  const handleGenerate = async (overridePrompt) => {
+    const finalPrompt = overridePrompt || buildFullPrompt();
+    if (!finalPrompt.trim()) {
+      toast.error('Please enter a design prompt');
+      return;
+    }
+
     setIsGenerating(true);
-
-    // Save to history
-    setPromptHistory(prev => {
-      const updated = [prompt.trim(), ...prev.filter(p => p !== prompt.trim())];
-      return updated.slice(0, MAX_HISTORY);
-    });
-
     try {
-      const fullPrompt = buildFullPrompt();
-      const { data } = await api.post('/upload/ai-generate', {
-        prompt: fullPrompt,
-        width: 1024,
-        height: 1024,
-        productContext: productLabel,
-        mode,
+      const { data } = await api.post('/ai/generate', {
+        prompt: finalPrompt,
+        category,
+        productType,
       });
-      setGeneratedImages(prev => [{ url: data.url, prompt: prompt.trim(), mode }, ...prev].slice(0, 8));
-      toast.success('Design generated!');
-    } catch (err) {
-      const msg = err?.response?.data?.message || 'Generation failed';
-      toast.error(msg);
+
+      const imageUrl = data.imageUrl || data.image;
+      if (imageUrl) {
+        setGeneratedImages(prev => [imageUrl, ...prev]);
+
+        // Add to history if not already there
+        if (!promptHistory.includes(prompt.trim()) && prompt.trim()) {
+          setPromptHistory(prev => [prompt.trim(), ...prev.slice(0, MAX_HISTORY - 1)]);
+        }
+
+        toast.success('Design generated!');
+      } else {
+        toast.error('No image returned from AI');
+      }
+    } catch (error) {
+      console.error('AI Generation Error:', error);
+      toast.error(error?.response?.data?.message || 'Failed to generate design. Try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // ── Generate Variation ────────────────────────────────────────────────────
-  const generateVariation = async (originalUrl, originalPrompt) => {
-    setIsGenerating(true);
-    try {
-      const variationPrompt = `${originalPrompt}, variation, alternative version, same style, ${currentMode.promptSuffix}, for ${productLabel}`;
-      const { data } = await api.post('/upload/ai-generate', {
-        prompt: variationPrompt,
-        width: 1024,
-        height: 1024,
-        productContext: productLabel,
-        mode,
-        variationOf: originalUrl,
-      });
-      setGeneratedImages(prev => [{ url: data.url, prompt: originalPrompt, mode: 'variation' }, ...prev].slice(0, 8));
-      toast.success('Variation generated!');
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Variation failed');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // ── Add to Canvas (free placement) ────────────────────────────────────────
+  // ── Add to Canvas (centered in active print zone) ─────────────────────────
   const addToCanvas = (url) => {
     if (!fabricRef.current) return;
     fabric.Image.fromURL(url, (img) => {
-      const maxW = fabricRef.current.width * 0.5;
-      const maxH = fabricRef.current.height * 0.5;
+      const maxW = 160;
+      const maxH = 160;
       const scale = Math.min(maxW / img.width, maxH / img.height, 1);
       img.set({
         scaleX: scale, scaleY: scale,
-        left: 60, top: 60,
         id: `ai_${Date.now()}`,
         customName: 'AI Design',
       });
-      fabricRef.current.add(img);
-      fabricRef.current.setActiveObject(img);
-      fabricRef.current.renderAll();
+      if (addCanvasObject) {
+        addCanvasObject(img, { side: activeSide });
+      } else {
+        fabricRef.current.add(img);
+        fabricRef.current.setActiveObject(img);
+        fabricRef.current.renderAll();
+      }
       toast.success('Added to canvas!');
     }, { crossOrigin: 'anonymous' });
   };
@@ -200,11 +187,12 @@ const AIDesigner = () => {
   // ── Apply to Design Zone (auto-scaled to fit) ─────────────────────────────
   const applyToDesignZone = (url) => {
     if (!fabricRef.current) return;
-    const zone = getDesignZone(productType);
+    const canvas = fabricRef.current;
+    const zone = getDesignZone(productType, activeSide, canvas.width, canvas.height);
     fabric.Image.fromURL(url, (img) => {
       const scaleX = zone.w / img.width;
       const scaleY = zone.h / img.height;
-      const fitScale = Math.min(scaleX, scaleY);
+      const fitScale = Math.min(scaleX, scaleY) * 0.9;
       const centeredLeft = zone.x + (zone.w - img.width * fitScale) / 2;
       const centeredTop = zone.y + (zone.h - img.height * fitScale) / 2;
       img.set({
@@ -215,9 +203,13 @@ const AIDesigner = () => {
         id: `ai_design_${Date.now()}`,
         customName: 'AI Design',
       });
-      fabricRef.current.add(img);
-      fabricRef.current.setActiveObject(img);
-      fabricRef.current.renderAll();
+      if (addCanvasObject) {
+        addCanvasObject(img, { side: activeSide });
+      } else {
+        fabricRef.current.add(img);
+        fabricRef.current.setActiveObject(img);
+        fabricRef.current.renderAll();
+      }
       toast.success('Applied to design zone!');
     }, { crossOrigin: 'anonymous' });
   };

@@ -2,25 +2,25 @@ import { fabric } from 'fabric';
 import { getMockup, MOCKUP_IMAGES } from './mockupRegistry';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   Product Template System — 100% Photorealistic Studio Mockups
+   Product Template System — Photorealistic Studio Mockups
    ─────────────────────────────────────────────────────────────────────────────
-   Loads actual high-resolution studio photographs directly onto the canvas,
-   providing true-to-life fabric folds, collar ribbing, stitching, and depth.
+   Loads high-resolution studio photographs directly onto the canvas.
+   Supports centered single-garment Front and Back views with full-product coverage.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 // ── Color Palettes ──────────────────────────────────────────────────────────
 export const PRODUCT_COLORS = {
   clothing: [
-    { id: 'white',    hex: '#FFFFFF', label: 'White' },
-    { id: 'gray',     hex: '#71717a', label: 'Heather Gray' },
-    { id: 'black',    hex: '#1a1a1a', label: 'Jet Black' },
-    { id: 'cream',    hex: '#f5f0e8', label: 'Natural Cream' },
-    { id: 'sand',     hex: '#d4b896', label: 'Warm Sand' },
-    { id: 'navy',     hex: '#1e3a5f', label: 'Navy' },
-    { id: 'red',      hex: '#b91c1c', label: 'Crimson' },
-    { id: 'forest',   hex: '#166534', label: 'Forest Green' },
+    { id: 'white',      hex: '#FFFFFF', label: 'White' },
+    { id: 'gray',       hex: '#71717a', label: 'Heather Gray' },
+    { id: 'black',      hex: '#1a1a1a', label: 'Jet Black' },
+    { id: 'cream',      hex: '#f5f0e8', label: 'Natural Cream' },
+    { id: 'sand',       hex: '#d4b896', label: 'Warm Sand' },
+    { id: 'navy',       hex: '#1e3a5f', label: 'Navy' },
+    { id: 'red',        hex: '#b91c1c', label: 'Crimson' },
+    { id: 'forest',     hex: '#166534', label: 'Forest Green' },
     { id: 'terracotta', hex: '#C76D4A', label: 'Terracotta' },
-    { id: 'sage',     hex: '#8A9A7B', label: 'Sage' },
+    { id: 'sage',       hex: '#8A9A7B', label: 'Sage' },
   ],
   artwork: [
     { id: 'white',    hex: '#FFFFFF', label: 'White Frame' },
@@ -81,26 +81,71 @@ function tid(suffix) {
   return { id: `__template__${suffix}`, customName: '__template__', ...LOCK };
 }
 
+export const isDualGarment = (productType) => {
+  return ['tshirt', 'oversized', 'hoodie', 'sweatshirt', 'longsleeve', 'tanktop', 'polo', 'jacket', 'phonecase', 'totebag', 'cap'].includes(productType);
+};
+
 /**
- * Returns exact pixel design zone coordinates matching the product's print area
+ * Returns exact pixel design zone coordinates matching the full centered product
  */
 export const getDesignZone = (productType, side = 'front', canvasW = 960, canvasH = 580) => {
-  const mockup = getMockup(productType);
-  const area = (side === 'back' && mockup.printAreaBack) ? mockup.printAreaBack : mockup.printArea;
-  if (!area) {
-    return { x: canvasW * 0.15, y: canvasH * 0.2, w: canvasW * 0.3, h: canvasH * 0.4 };
+  if (!isDualGarment(productType)) {
+    return {
+      x: Math.round(canvasW * 0.06),
+      y: Math.round(canvasH * 0.06),
+      w: Math.round(canvasW * 0.88),
+      h: Math.round(canvasH * 0.88),
+    };
   }
 
+  if (productType === 'tanktop') {
+    return {
+      x: Math.round(canvasW * 0.28),
+      y: Math.round(canvasH * 0.09),
+      w: Math.round(canvasW * 0.44),
+      h: Math.round(canvasH * 0.82),
+    };
+  }
+
+  if (productType === 'cap') {
+    return {
+      x: Math.round(canvasW * 0.26),
+      y: Math.round(canvasH * 0.12),
+      w: Math.round(canvasW * 0.48),
+      h: Math.round(canvasH * 0.74),
+    };
+  }
+
+  if (productType === 'totebag') {
+    return {
+      x: Math.round(canvasW * 0.25),
+      y: Math.round(canvasH * 0.08),
+      w: Math.round(canvasW * 0.50),
+      h: Math.round(canvasH * 0.84),
+    };
+  }
+
+  if (productType === 'phonecase') {
+    return {
+      x: Math.round(canvasW * 0.30),
+      y: Math.round(canvasH * 0.06),
+      w: Math.round(canvasW * 0.40),
+      h: Math.round(canvasH * 0.88),
+    };
+  }
+
+  // T-shirts, Hoodies, Sweatshirts, Polos, Jackets, Long Sleeves
   return {
-    x: Math.round((area.x / 100) * canvasW),
-    y: Math.round((area.y / 100) * canvasH),
-    w: Math.round((area.w / 100) * canvasW),
-    h: Math.round((area.h / 100) * canvasH),
+    x: Math.round(canvasW * 0.22),
+    y: Math.round(canvasH * 0.08),
+    w: Math.round(canvasW * 0.56),
+    h: Math.round(canvasH * 0.84),
   };
 };
 
 /**
  * Renders the authentic photorealistic studio mockup photograph onto Fabric.js canvas
+ * Centers the active side (Front or Back) large and prominent on the screen.
  */
 export function renderProductTemplate(canvas, productType, productColor, canvasW = 960, canvasH = 580, activeSide = 'front') {
   if (!canvas) return;
@@ -109,19 +154,38 @@ export function renderProductTemplate(canvas, productType, productColor, canvasW
   removeProductTemplate(canvas);
 
   const mockup = getMockup(productType);
-  const mockupSrc = activeSide === 'back' && mockup.back ? mockup.back : mockup.front;
+  const mockupSrc = mockup.front;
+  const isDual = isDualGarment(productType);
   const zone = getDesignZone(productType, activeSide, canvasW, canvasH);
 
   // Load the studio mockup photograph
   fabric.Image.fromURL(mockupSrc, (img) => {
     if (!img) return;
 
-    // Scale photograph to fill canvas width and center vertically
-    const scale = Math.min(canvasW / img.width, canvasH / img.height);
-    const left = (canvasW - img.width * scale) / 2;
-    const top = (canvasH - img.height * scale) / 2;
+    let cropX = 0;
+    let cropY = 0;
+    let cropW = img.width;
+    let cropH = img.height;
+
+    if (isDual) {
+      cropW = img.width / 2;
+      if (activeSide === 'back') {
+        cropX = img.width / 2;
+      }
+    }
+
+    // Scale single focused garment to fill canvas height gracefully and center horizontally
+    const maxW = canvasW * 0.88;
+    const maxH = canvasH * 0.94;
+    const scale = Math.min(maxW / cropW, maxH / cropH);
+    const left = (canvasW - cropW * scale) / 2;
+    const top = (canvasH - cropH * scale) / 2;
 
     img.set({
+      cropX,
+      cropY,
+      width: cropW,
+      height: cropH,
       left,
       top,
       scaleX: scale,
@@ -131,59 +195,77 @@ export function renderProductTemplate(canvas, productType, productColor, canvasW
 
     const templateObjects = [img];
 
-    // Fabric Color Tint Overlay (when color is not pure white)
-    if (productColor && productColor.toUpperCase() !== '#FFFFFF') {
-      const tint = new fabric.Rect({
-        left,
-        top,
-        width: img.width * scale,
-        height: img.height * scale,
+    // Fabric Color Tinting — applied directly onto the centered garment
+    const isNeutral = ['#FFFFFF', '#ffffff', '#F7F3EB', '#FAF7F0', '#faf7f0', '#f7f3eb'].includes(productColor);
+    if (productColor && !isNeutral) {
+      const isDark = ['#1a1a1a', '#000000', '#1e293b', '#1e3a5f', '#166534', '#b91c1c', '#71717a'].includes(productColor.toLowerCase());
+
+      const garmentTint = new fabric.Rect({
+        left: zone.x,
+        top: zone.y,
+        width: zone.w,
+        height: zone.h,
+        rx: 24,
+        ry: 24,
         fill: productColor,
-        opacity: 0.28,
+        opacity: isDark ? 0.72 : 0.58,
         globalCompositeOperation: 'multiply',
         ...tid('tint'),
       });
-      templateObjects.push(tint);
+
+      const garmentHue = new fabric.Rect({
+        left: zone.x,
+        top: zone.y,
+        width: zone.w,
+        height: zone.h,
+        rx: 24,
+        ry: 24,
+        fill: productColor,
+        opacity: isDark ? 0.18 : 0.25,
+        globalCompositeOperation: 'color',
+        ...tid('hue'),
+      });
+
+      templateObjects.push(garmentTint, garmentHue);
     }
 
-    // Design Zone Indicator (Clean dashed bounding boundary)
-    const zoneBox = new fabric.Rect({
+    // Active Design Zone Indicator — full product coverage dashed boundary
+    const activeZoneBox = new fabric.Rect({
       left: zone.x,
       top: zone.y,
       width: zone.w,
       height: zone.h,
-      fill: 'transparent',
-      stroke: 'rgba(199, 109, 74, 0.4)',
-      strokeWidth: 1.5,
-      strokeDashArray: [6, 4],
-      rx: 8,
-      ry: 8,
-      ...tid('zone'),
+      fill: 'rgba(199, 109, 74, 0.03)',
+      stroke: '#C76D4A',
+      strokeWidth: 2,
+      strokeDashArray: [8, 5],
+      rx: 20,
+      ry: 20,
+      ...tid('active_zone'),
     });
 
-    // Side Badge Label
-    const sideLabel = activeSide === 'back' ? 'BACK PRINT AREA' : 'FRONT PRINT AREA';
-    const label = new fabric.Text(sideLabel, {
+    const sideLabel = activeSide === 'back' ? '● BACK PRINT AREA (FULL PRODUCT)' : '● FRONT PRINT AREA (FULL PRODUCT)';
+    const activeLabel = new fabric.Text(sideLabel, {
       left: zone.x + zone.w / 2,
-      top: Math.max(zone.y - 20, 10),
+      top: Math.max(6, zone.y - 18),
       fontSize: 10,
-      fontFamily: 'Space Grotesk, sans-serif',
-      fill: 'rgba(199, 109, 74, 0.75)',
+      fontFamily: 'Space Grotesk, Inter, sans-serif',
+      fill: '#C76D4A',
       fontWeight: '800',
       textAlign: 'center',
       originX: 'center',
       letterSpacing: 1.2,
-      ...tid('label'),
+      ...tid('active_label'),
     });
 
-    templateObjects.push(zoneBox, label);
+    templateObjects.push(activeZoneBox, activeLabel);
 
     // Insert at bottom of canvas stack
     templateObjects.forEach((obj, i) => {
       canvas.insertAt(obj, i);
     });
 
-    // Bring all user artwork objects to front
+    // Bring user artwork objects to front
     canvas.getObjects()
       .filter((obj) => !isTemplateObject(obj) && obj.id !== '__grid__')
       .forEach((obj) => canvas.bringToFront(obj));
@@ -201,8 +283,8 @@ export function createDesignZoneClipPath(productType, side = 'front', canvasW = 
     top: zone.y,
     width: zone.w,
     height: zone.h,
-    rx: 8,
-    ry: 8,
+    rx: 20,
+    ry: 20,
     absolutePositioned: true,
   });
 }
@@ -210,18 +292,25 @@ export function createDesignZoneClipPath(productType, side = 'front', canvasW = 
 export function removeProductTemplate(canvas) {
   if (!canvas) return;
   canvas.getObjects()
-    .filter((o) => o.id && o.id.startsWith('__template__'))
-    .forEach((o) => canvas.remove(o));
-  canvas.renderAll();
+    .filter(isTemplateObject)
+    .forEach((obj) => canvas.remove(obj));
 }
 
 export function isTemplateObject(obj) {
-  return obj && obj.id && obj.id.startsWith('__template__');
+  if (!obj) return false;
+  return (
+    obj.id?.startsWith('__template__') ||
+    obj.customName === '__template__' ||
+    obj.id === '__active_zone__' ||
+    obj.id === '__active_label__' ||
+    obj.id === '__inactive_zone__' ||
+    obj.id === '__inactive_label__'
+  );
 }
 
 export function getDefaultProductType(category) {
-  const types = PRODUCT_TYPES[category];
-  return types ? types[0].id : 'tshirt';
+  const types = PRODUCT_TYPES[category] || PRODUCT_TYPES.clothing;
+  return types[0]?.id || 'tshirt';
 }
 
 export function getProductLabel(productType) {
@@ -229,5 +318,18 @@ export function getProductLabel(productType) {
     const found = cat.find((p) => p.id === productType);
     if (found) return found.label;
   }
-  return 'Product';
+  return productType;
 }
+
+export default {
+  renderProductTemplate,
+  removeProductTemplate,
+  getDesignZone,
+  createDesignZoneClipPath,
+  isTemplateObject,
+  PRODUCT_COLORS,
+  PRODUCT_TYPES,
+  getDefaultProductType,
+  getProductLabel,
+  isDualGarment,
+};

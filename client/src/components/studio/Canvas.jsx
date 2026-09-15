@@ -7,6 +7,7 @@ import {
   isTemplateObject,
   createDesignZoneClipPath,
   getDefaultProductType,
+  getDesignZone,
   PRODUCT_TYPES,
   PRODUCT_COLORS,
 } from '@/components/studio/ProductTemplate';
@@ -27,6 +28,12 @@ const StudioCanvas = ({ category }) => {
   } = useStudio();
 
   const dims = CANVAS_DIMENSIONS[category] || CANVAS_DIMENSIONS.artwork;
+
+  const activeSideRef = useRef(activeSide);
+  activeSideRef.current = activeSide;
+
+  const productTypeRef = useRef(productType);
+  productTypeRef.current = productType;
 
   // Mobile/viewport responsive scaling
   useEffect(() => {
@@ -55,12 +62,12 @@ const StudioCanvas = ({ category }) => {
     };
   }, [dims.width, dims.height]);
 
-  // Set default product type when category changes
+  // Set default product type when category changes (preserve user-selected color)
   useEffect(() => {
     const defaultType = getDefaultProductType(category);
     setProductType(defaultType);
-    setProductColor('#FFFFFF');
-  }, [category, setProductType, setProductColor]);
+  }, [category, setProductType]);
+
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -92,23 +99,27 @@ const StudioCanvas = ({ category }) => {
     // Events — ignore template objects for selection
     canvas.on('selection:created', (e) => {
       const sel = e.selected?.[0];
-      if (sel && !isTemplateObject(sel)) setActiveObject(sel);
+      if (sel && !isTemplateObject(sel)) {
+        setActiveObject(sel);
+        if (sel.side && sel.side !== activeSideRef.current) {
+          setActiveSide(sel.side);
+        }
+      }
     });
     canvas.on('selection:updated', (e) => {
       const sel = e.selected?.[0];
-      if (sel && !isTemplateObject(sel)) setActiveObject(sel);
+      if (sel && !isTemplateObject(sel)) {
+        setActiveObject(sel);
+        if (sel.side && sel.side !== activeSideRef.current) {
+          setActiveSide(sel.side);
+        }
+      }
     });
     canvas.on('selection:cleared', () => setActiveObject(null));
 
-    // Live texture updates & clip path enforcement for user objects
+    // Live texture updates for user objects
     const handleCanvasChange = (e) => {
       if (e?.target && isTemplateObject(e.target)) return;
-
-      // Ensure user object has clipPath set to the design zone so it CANNOT bleed outside the item
-      if (e?.target && !isTemplateObject(e.target) && e.target.id !== '__grid__' && !e.target.clipPath) {
-        e.target.clipPath = createDesignZoneClipPath(productType);
-      }
-
       notifyTextureUpdate();
     };
 
@@ -125,18 +136,44 @@ const StudioCanvas = ({ category }) => {
 
     canvas.on('object:added', (e) => {
       const obj = e?.target;
-      if (obj && isTemplateObject(obj)) return;
+      if (!obj || isTemplateObject(obj) || obj.id === '__grid__') return;
 
-      if (obj && !isTemplateObject(obj) && obj.id !== '__grid__') {
-        // Tag object with current design side (front or back)
-        if (!obj.side) {
-          obj.side = activeSide;
-        }
-        // Enforce strict design zone clipping on added user objects
-        obj.clipPath = createDesignZoneClipPath(productType, activeSide);
+      const currentSide = obj.side || activeSideRef.current || 'front';
+      const curProduct = productTypeRef.current;
+      const zone = getDesignZone(curProduct, currentSide, dims.width, dims.height);
+      const centerX = zone.x + zone.w / 2;
+      const centerY = zone.y + zone.h / 2;
+
+      // Ensure side and interactivity are assigned
+      if (!obj.side) {
+        obj.side = currentSide;
       }
 
-      if (obj && obj.type === 'path' && !obj.id) {
+      // If placed way outside zone or at random default offset, center inside the active print zone
+      const isInside =
+        obj.left !== undefined &&
+        obj.left >= zone.x - 30 &&
+        obj.left <= zone.x + zone.w + 30 &&
+        obj.top >= zone.y - 30 &&
+        obj.top <= zone.y + zone.h + 30;
+
+      if (!isInside && (obj.left === undefined || obj.left === 0 || obj.left === 60 || obj.left === 80 || obj.left === 100 || obj.left === 120 || obj.left === 150 || obj.left === 200)) {
+        obj.set({
+          left: centerX,
+          top: centerY,
+          originX: 'center',
+          originY: 'center',
+        });
+      }
+
+      const isCurrent = (obj.side || currentSide) === activeSideRef.current;
+      obj.set({
+        visible: isCurrent,
+        selectable: isCurrent,
+        evented: isCurrent,
+      });
+
+      if (obj.type === 'path' && !obj.id) {
         obj.set({
           id: `path_${Date.now()}`,
           customName: 'Brush Stroke',
@@ -152,6 +189,40 @@ const StudioCanvas = ({ category }) => {
       handleCanvasChange(e);
       syncLayers();
       pushHistory();
+    });
+
+    // Interactive switch when clicking on garments
+    canvas.on('mouse:down', (e) => {
+      if (e.target && !isTemplateObject(e.target)) {
+        if (e.target.side && e.target.side !== activeSideRef.current) {
+          setActiveSide(e.target.side);
+        }
+        return;
+      }
+      const pointer = canvas.getPointer(e.e);
+      const curProduct = productTypeRef.current;
+      const frontZone = getDesignZone(curProduct, 'front', dims.width, dims.height);
+      const backZone = getDesignZone(curProduct, 'back', dims.width, dims.height);
+
+      if (
+        pointer.x >= frontZone.x - 15 &&
+        pointer.x <= frontZone.x + frontZone.w + 15 &&
+        pointer.y >= frontZone.y - 15 &&
+        pointer.y <= frontZone.y + frontZone.h + 15
+      ) {
+        if (activeSideRef.current !== 'front') {
+          setActiveSide('front');
+        }
+      } else if (
+        pointer.x >= backZone.x - 15 &&
+        pointer.x <= backZone.x + backZone.w + 15 &&
+        pointer.y >= backZone.y - 15 &&
+        pointer.y <= backZone.y + backZone.h + 15
+      ) {
+        if (activeSideRef.current !== 'back') {
+          setActiveSide('back');
+        }
+      }
     });
 
     // Snap to grid
@@ -181,8 +252,7 @@ const StudioCanvas = ({ category }) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
         if (canvas._clipboard) {
           canvas._clipboard.clone((cloned) => {
-            cloned.set({ left: cloned.left + 20, top: cloned.top + 20, id: Date.now(), side: activeSide });
-            cloned.clipPath = createDesignZoneClipPath(productType, activeSide);
+            cloned.set({ left: cloned.left + 20, top: cloned.top + 20, id: Date.now(), side: activeSide, selectable: true, evented: true });
             canvas.add(cloned);
             canvas.setActiveObject(cloned);
             canvas.renderAll();
@@ -202,7 +272,7 @@ const StudioCanvas = ({ category }) => {
 
     document.addEventListener('keydown', handleKeyboard);
 
-    // Render product template & apply clip path
+    // Render product template
     renderProductTemplate(canvas, productType, productColor, dims.width, dims.height, activeSide);
 
     pushHistory();
@@ -213,21 +283,24 @@ const StudioCanvas = ({ category }) => {
     };
   }, [category]);
 
-  // Re-render product template & update clip path when product type, color, or active side changes
+  // Re-render product template & update object visibility when product type, color, or active side changes
   useEffect(() => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
     renderProductTemplate(canvas, productType, productColor, dims.width, dims.height, activeSide);
 
-    // Toggle user objects visibility based on activeSide
-    const clipPath = createDesignZoneClipPath(productType, activeSide);
+    // Toggle user objects visibility and interactivity based on activeSide (Front vs Back)
     canvas.getObjects().forEach((obj) => {
       if (!isTemplateObject(obj) && obj.id !== '__grid__') {
         if (!obj.side) {
           obj.side = 'front';
         }
-        obj.visible = (obj.side === activeSide);
-        obj.clipPath = clipPath;
+        const isCurrent = obj.side === activeSide;
+        obj.set({
+          visible: isCurrent,
+          selectable: isCurrent,
+          evented: isCurrent,
+        });
       }
     });
     canvas.discardActiveObject();
@@ -290,87 +363,88 @@ const StudioCanvas = ({ category }) => {
 
   const types = PRODUCT_TYPES[category] || [];
   const colors = PRODUCT_COLORS[category] || [];
-  const isGarment = ['clothing'].includes(category);
+  const isGarment = category === 'clothing' || ['tshirt', 'oversized', 'hoodie', 'sweatshirt', 'longsleeve', 'tanktop', 'polo', 'jacket'].includes(productType);
+
+  const frontCount = fabricRef.current?.getObjects().filter((o) => !isTemplateObject(o) && o.id !== '__grid__' && (o.side === 'front' || !o.side)).length || 0;
+  const backCount = fabricRef.current?.getObjects().filter((o) => !isTemplateObject(o) && o.id !== '__grid__' && o.side === 'back').length || 0;
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col">
-      {/* Product selector strip */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-3 py-2 border-b border-glass-border bg-dark-900/20 overflow-x-auto no-scrollbar">
-        {/* Product type chips */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-2xs font-semibold text-dark-500 uppercase tracking-wider mr-1 hidden sm:block">Product</span>
-          {types.map(({ id, label, emoji }) => (
-            <button
-              key={id}
-              onClick={() => setProductType(id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                productType === id
-                  ? 'bg-brand-500/20 text-brand-400 ring-1 ring-brand-500/30'
-                  : 'text-dark-400 hover:text-dark-200 hover:bg-white/5'
-              }`}
-              title={label}
-            >
-              <span className="text-sm">{emoji}</span>
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
+    <div className="flex-1 overflow-hidden flex flex-col relative bg-dark-950">
+      {/* ── Top Floating View Switcher & Product Bar ── */}
+      <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-glass-border bg-dark-900/60 backdrop-blur-md z-10">
+        {/* Left: Product Type & Color summary */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-950/80 border border-glass-border text-xs font-semibold text-white">
+            <span>{types.find(t => t.id === productType)?.emoji || '👕'}</span>
+            <span className="hidden sm:inline capitalize">{productType}</span>
+          </div>
+
+          {/* Quick Color Circle */}
+          <div
+            className="w-5 h-5 rounded-full border border-white/30 shadow-xs"
+            style={{ background: productColor }}
+            title={`Color: ${productColor}`}
+          />
         </div>
 
-        {/* Front / Back Toggle (for garments) */}
-        {isGarment && (
-          <>
-            <div className="w-px h-5 bg-glass-border flex-shrink-0" />
-            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-dark-950/60 border border-glass-border flex-shrink-0">
-              <button
-                onClick={() => setActiveSide('front')}
-                className={`px-2.5 py-1 rounded-md text-2xs font-bold transition-all ${
-                  activeSide === 'front' ? 'bg-brand-500 text-white' : 'text-dark-400 hover:text-white'
-                }`}
-              >
-                Front
-              </button>
-              <button
-                onClick={() => setActiveSide('back')}
-                className={`px-2.5 py-1 rounded-md text-2xs font-bold transition-all ${
-                  activeSide === 'back' ? 'bg-brand-500 text-white' : 'text-dark-400 hover:text-white'
-                }`}
-              >
-                Back
-              </button>
-            </div>
-          </>
+        {/* Center: Prominent FRONT / BACK View Selector */}
+        {isGarment ? (
+          <div className="flex items-center p-0.5 rounded-xl bg-dark-950 border border-brand-500/30 shadow-lg shadow-black/40">
+            <button
+              onClick={() => setActiveSide('front')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeSide === 'front'
+                  ? 'bg-brand-500 text-white shadow-md shadow-brand-500/30'
+                  : 'text-dark-400 hover:text-white hover:bg-dark-800/60'
+              }`}
+            >
+              <span>👕 Front</span>
+              {frontCount > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeSide === 'front' ? 'bg-white/20 text-white' : 'bg-dark-700 text-dark-300'}`}>
+                  {frontCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveSide('back')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeSide === 'back'
+                  ? 'bg-brand-500 text-white shadow-md shadow-brand-500/30'
+                  : 'text-dark-400 hover:text-white hover:bg-dark-800/60'
+              }`}
+            >
+              <span>🔄 Back</span>
+              {backCount > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeSide === 'back' ? 'bg-white/20 text-white' : 'bg-dark-700 text-dark-300'}`}>
+                  {backCount}
+                </span>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="text-xs font-semibold text-dark-400">
+            ✦ Full Surface Print
+          </div>
         )}
 
-        <div className="w-px h-5 bg-glass-border flex-shrink-0" />
-
-        {/* Color picker */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <span className="text-2xs font-semibold text-dark-500 uppercase tracking-wider mr-1 hidden sm:block">Color</span>
-          {colors.map(({ id, hex, label }) => (
-            <button
-              key={id}
-              onClick={() => setProductColor(hex)}
-              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
-                productColor === hex ? 'border-brand-500 ring-2 ring-brand-500/30 scale-110' : 'border-white/20'
-              }`}
-              style={{ background: hex }}
-              title={label}
-            />
-          ))}
+        {/* Right: Active side hint */}
+        <div className="text-2xs font-semibold text-dark-400 uppercase tracking-wider hidden sm:block">
+          Editing: <span className="text-brand-400 font-bold">{isGarment ? (activeSide === 'back' ? 'Back View' : 'Front View') : 'Print Area'}</span>
         </div>
       </div>
 
-      {/* Canvas area */}
+      {/* ── Canvas Viewport ── */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden flex items-center justify-center p-4 sm:p-8"
-        style={{ background: 'repeating-conic-gradient(rgba(255,255,255,0.02) 0% 25%, transparent 0% 50%) 0 0 / 32px 32px' }}
+        className="flex-1 overflow-hidden flex items-center justify-center p-4 sm:p-6 relative select-none"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(199,109,74,0.03) 0%, transparent 70%)' }}
       >
         <div
-          className="relative transition-all duration-200"
+          className="relative transition-transform duration-150 ease-out"
           style={{
-            boxShadow: '0 0 0 1px rgba(99,102,241,0.3), 0 20px 60px rgba(0,0,0,0.5)',
-            borderRadius: 4,
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+            borderRadius: 8,
             transform: `scale(${scale})`,
             transformOrigin: 'center center',
             width: dims.width,

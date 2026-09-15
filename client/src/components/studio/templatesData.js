@@ -364,7 +364,20 @@ export function applyTemplateToFabricCanvas(canvas, template, values, colors, ph
   const toRemove = objects.filter((obj) => obj.id && !obj.id.startsWith('__template_') && obj.id !== '__grid__');
   toRemove.forEach((obj) => canvas.remove(obj));
 
-  const targetProduct = template.category === 'artwork' ? 'canvas' : template.category === 'accessories' ? 'phonecase' : 'tshirt';
+  // Use specific product type per template for correct design zone targeting
+  const TEMPLATE_PRODUCT_MAP = {
+    'signature-smiley':    'tshirt',
+    'tokyo-streetwear':    'oversized',
+    'varsity-athletic':    'sweatshirt',
+    'luxury-monogram':     'hoodie',
+    'polaroid-frame':      'tshirt',
+    'retro-mountain':      'jacket',
+    'bauhaus-poster':      'poster',
+    'botanical-art':       'canvas',
+    'cyber-matrix':        'phonecase',
+    'vintage-crest-patch': 'totebag',
+  };
+  const targetProduct = TEMPLATE_PRODUCT_MAP[template.id] || (template.category === 'artwork' ? 'canvas' : template.category === 'accessories' ? 'phonecase' : 'tshirt');
   const zone = getDesignZone(targetProduct, 'front', canvas.width, canvas.height);
   const centerX = zone.x + zone.w / 2;
   const centerY = zone.y + zone.h / 2;

@@ -1,25 +1,31 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Sparkles, ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
+import api from '@/lib/axios';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/utils';
+import BrandLogo from '@/components/common/BrandLogo';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return toast.error('Please enter your email address');
+    if (!email) {
+      setError('Email is required');
+      return;
+    }
     setIsLoading(true);
     try {
       await api.post('/auth/forgot-password', { email });
       setSent(true);
+      toast.success('Reset link sent to your email');
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -30,12 +36,9 @@ const ForgotPassword = () => {
   return (
     <div className="min-h-screen mesh-bg flex items-center justify-center p-4">
       <motion.div className="w-full max-w-md" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Link to="/" className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-white">Custom<span className="gradient-text">Flex</span></span>
-        </Link>
+        <div className="flex justify-center mb-8">
+          <BrandLogo size="lg" />
+        </div>
 
         <div className="glass-card-strong p-8">
           {sent ? (

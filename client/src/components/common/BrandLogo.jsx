@@ -2,35 +2,35 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 /**
- * CShapeSmileIcon — Professional geometric Crexza monogram
- * Features an architecturally precise 'C' curve paired with proportional eye dots ':'.
+ * CShapeSmileIcon — Geometric Crexza monogram
+ * An architecturally balanced 'C' curve paired with precision twin dots '(:'.
  */
 export const CShapeSmileIcon = ({ className = 'w-full h-full text-white' }) => (
   <svg
-    viewBox="0 0 36 36"
+    viewBox="0 0 32 32"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
     {/* Architectural C curve */}
     <path
-      d="M 19 8 C 11.2 8 7 12.8 7 18 C 7 23.2 11.2 28 19 28"
+      d="M 17 7.5 C 10.2 7.5 6.5 11.6 6.5 16 C 6.5 20.4 10.2 24.5 17 24.5"
       stroke="currentColor"
-      strokeWidth="3.6"
+      strokeWidth="3.2"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     {/* Precision twin eye dots */}
-    <circle cx="26" cy="12.5" r="2.2" fill="currentColor" />
-    <circle cx="26" cy="23.5" r="2.2" fill="currentColor" />
+    <circle cx="23.5" cy="11.2" r="2.1" fill="currentColor" />
+    <circle cx="23.5" cy="20.8" r="2.1" fill="currentColor" />
   </svg>
 );
 
 /**
- * SmileyMark — Professional Luxury Brand Mark for Crexza
- * Minimalist, balanced, and premium.
+ * SmileyMark — Refined Luxury Brand Mark for Crexza
+ * Solid, crisp, and timeless (no muddy gradients).
  */
-export const SmileyMark = ({ size = 'md', className = '' }) => {
+export const SmileyMark = ({ size = 'md', variant = 'terracotta', className = '' }) => {
   const sizeMap = {
     sm: { box: 'w-7 h-7 rounded-lg', svg: 'w-4 h-4' },
     md: { box: 'w-8.5 h-8.5 rounded-xl', svg: 'w-5 h-5' },
@@ -40,29 +40,23 @@ export const SmileyMark = ({ size = 'md', className = '' }) => {
 
   const current = sizeMap[size] || sizeMap.md;
 
+  const variantStyles = {
+    terracotta: 'bg-[#C76D4A] text-white shadow-sm shadow-[#C76D4A]/25 border border-[#B55938]/30 group-hover/logo:bg-[#B55938]',
+    dark: 'bg-[#2C241E] text-[#F7F3EB] shadow-sm shadow-black/20 border border-[#3E2E22] group-hover/logo:bg-[#1E1713]',
+    light: 'bg-white text-[#C76D4A] shadow-sm shadow-black/5 border border-dark-800 group-hover/logo:border-[#C76D4A]/30',
+  };
+
+  const activeStyle = variantStyles[variant] || variantStyles.terracotta;
+
   return (
     <div className="relative group/logo inline-flex items-center justify-center select-none">
-      {/* Subtle refined ambient border glow on hover */}
+      {/* Main Luxury Emblem Badge - Solid, bold and clean */}
       <div
-        className="absolute -inset-0.5 rounded-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300 blur-xs"
-        style={{
-          background: 'linear-gradient(135deg, #C76D4A, #8A9A7B)',
-          zIndex: 0,
-        }}
-      />
-
-      {/* Main Luxury Emblem Badge */}
-      <div
-        className={`${current.box} relative z-10 flex items-center justify-center transition-all duration-200 group-hover/logo:scale-[1.03] ${className}`}
-        style={{
-          background: 'linear-gradient(145deg, #C76D4A 0%, #B85936 60%, #8A9A7B 100%)',
-          boxShadow: '0 2px 8px rgba(199, 109, 74, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-        }}
+        className={`${current.box} ${activeStyle} relative z-10 flex items-center justify-center transition-all duration-200 group-hover/logo:scale-[1.04] active:scale-95 ${className}`}
         title="Crexza (:"
       >
         <div className={`${current.svg} flex items-center justify-center`}>
-          <CShapeSmileIcon className="w-full h-full text-white" />
+          <CShapeSmileIcon className="w-full h-full" />
         </div>
       </div>
     </div>

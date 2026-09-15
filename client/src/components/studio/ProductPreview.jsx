@@ -7,7 +7,7 @@ import { isTemplateObject, getDesignZone } from './ProductTemplate';
 
 /**
  * ProductPreview — High-Fidelity Photorealistic Product Preview
- * Combines the real studio photo mockup with the user's canvas artwork.
+ * Cleanly captures the authentic studio mockup with all custom artwork mapped in place.
  */
 const ProductPreview = ({ category, onClose }) => {
   const {
@@ -21,13 +21,20 @@ const ProductPreview = ({ category, onClose }) => {
   } = useStudio();
 
   const previewCanvasRef = useRef(null);
-  const [previewSide, setPreviewSide] = useState(activeSide || 'front');
+  const [previewSide, setPreviewSide] = useState(activeSide === 'back' ? 'back' : 'front');
   const [selectedProduct, setSelectedProduct] = useState(productType || 'tshirt');
   const [isRendering, setIsRendering] = useState(true);
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
 
   const mockup = getMockup(selectedProduct);
   const allProducts = getAllProductTypes();
+
+  // Sync with activeSide changes
+  useEffect(() => {
+    if (activeSide) {
+      setPreviewSide(activeSide);
+    }
+  }, [activeSide]);
 
   // Re-composite whenever product, side, color or canvas changes
   useEffect(() => {
@@ -40,74 +47,48 @@ const ProductPreview = ({ category, onClose }) => {
     const pCanvas = previewCanvasRef.current;
     const ctx = pCanvas.getContext('2d');
 
-    // 1. Export only user artwork (hide template silhouettes temporarily)
-    const allObjects = canvas.getObjects();
-    const templateObjs = allObjects.filter((o) => isTemplateObject(o));
+    // 1. Temporarily hide editor guide boundaries & indicator badges
+    const guideObjs = canvas.getObjects().filter((o) =>
+      o.id === '__grid__' ||
+      o.id?.includes('active_zone') ||
+      o.id?.includes('active_label') ||
+      o.id?.includes('inactive_zone') ||
+      o.id?.includes('inactive_label')
+    );
 
-    // Save previous visibility
-    const prevVis = templateObjs.map((o) => o.visible);
-    templateObjs.forEach((o) => (o.visible = false));
+    const prevVis = guideObjs.map((o) => o.visible);
+    guideObjs.forEach((o) => (o.visible = false));
     canvas.renderAll();
 
-    // Get artwork bounding data
-    const artworkDataUrl = canvas.toDataURL({
+    // 2. Export clean, full-resolution photorealistic composite directly from the canvas
+    const cleanStudioDataUrl = canvas.toDataURL({
       format: 'png',
-      multiplier: 1.5,
+      multiplier: 2,
     });
 
-    // Restore template visibility
-    templateObjs.forEach((o, i) => (o.visible = prevVis[i]));
+    // 3. Restore guide indicators immediately on the studio canvas
+    guideObjs.forEach((o, i) => (o.visible = prevVis[i]));
     canvas.renderAll();
 
-    // 2. Load the mockup photo
-    const mockupImg = new Image();
-    mockupImg.crossOrigin = 'anonymous';
-    const mockupSrc = previewSide === 'back' && mockup.back ? mockup.back : mockup.front;
-    mockupImg.src = mockupSrc;
-
-    mockupImg.onload = () => {
+    // 4. Render clean studio composite onto preview canvas
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
       if (!isMounted) return;
 
-      // Set preview canvas dimensions to match the high-res mockup photo
-      pCanvas.width = mockupImg.naturalWidth || 1024;
-      pCanvas.height = mockupImg.naturalHeight || 1024;
-
-      // Draw studio mockup photo
+      pCanvas.width = img.naturalWidth || 1920;
+      pCanvas.height = img.naturalHeight || 1160;
       ctx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-      ctx.drawImage(mockupImg, 0, 0, pCanvas.width, pCanvas.height);
+      ctx.drawImage(img, 0, 0, pCanvas.width, pCanvas.height);
 
-      // 3. Load and overlay artwork onto the print area
-      const artImg = new Image();
-      artImg.crossOrigin = 'anonymous';
-      artImg.onload = () => {
-        if (!isMounted) return;
-
-        const printArea = previewSide === 'back' && mockup.printAreaBack
-          ? mockup.printAreaBack
-          : mockup.printArea;
-
-        const targetX = (printArea.x / 100) * pCanvas.width;
-        const targetY = (printArea.y / 100) * pCanvas.height;
-        const targetW = (printArea.w / 100) * pCanvas.width;
-        const targetH = (printArea.h / 100) * pCanvas.height;
-
-        // Overlay with realistic blending
-        ctx.save();
-        ctx.globalAlpha = 0.95;
-        // Natural fabric blend mode for realistic texture integration
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(artImg, targetX, targetY, targetW, targetH);
-        ctx.restore();
-
-        setIsRendering(false);
-      };
-      artImg.src = artworkDataUrl;
+      setIsRendering(false);
     };
+    img.src = cleanStudioDataUrl;
 
     return () => {
       isMounted = false;
     };
-  }, [selectedProduct, previewSide, productColor, fabricRef]);
+  }, [selectedProduct, previewSide, productColor, activeSide, fabricRef]);
 
   // Download high-resolution composite image
   const handleDownload = () => {
@@ -119,12 +100,12 @@ const ProductPreview = ({ category, onClose }) => {
   };
 
   return (
-    <div className="glass-card-strong p-6 sm:p-7 rounded-3xl flex flex-col items-center gap-5 max-w-xl w-full mx-4 border border-glass-border shadow-2xl relative">
+    <div className="glass-card-strong p-6 sm:p-7 rounded-3xl flex flex-col items-center gap-5 max-w-2xl w-full mx-4 border border-glass-border shadow-2xl relative select-none">
       {/* Header */}
       <div className="w-full flex items-center justify-between border-b border-glass-border pb-4">
         <div className="flex items-center gap-2.5">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center font-mono font-black text-sm text-[#F7F3EB] select-none"
+            className="w-8 h-8 rounded-lg flex items-center justify-center font-mono font-black text-sm text-[#F7F3EB] select-none shadow-sm"
             style={{ background: 'linear-gradient(135deg, #C76D4A, #8A9A7B)' }}
           >
             (:
@@ -139,7 +120,7 @@ const ProductPreview = ({ category, onClose }) => {
         </div>
 
         {onClose && (
-          <button onClick={onClose} className="toolbar-btn" title="Close">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-dark-400 hover:text-white transition-colors" title="Close">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -170,40 +151,46 @@ const ProductPreview = ({ category, onClose }) => {
                   }}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     selectedProduct === p.id
-                      ? 'bg-brand-500/20 text-brand-500 font-bold'
+                      ? 'bg-brand-500/20 text-brand-400 font-bold'
                       : 'text-dark-300 hover:bg-dark-800/60 hover:text-white'
                   }`}
                 >
                   <img src={p.front} alt="" className="w-6 h-6 rounded object-cover" />
                   <span className="truncate">{p.label}</span>
-                  {selectedProduct === p.id && <Check className="w-3 h-3 text-brand-500 ml-auto" />}
+                  {selectedProduct === p.id && <Check className="w-3 h-3 text-brand-400 ml-auto" />}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* Front / Back Toggle */}
+        {/* View Switcher: Front / Back */}
         <div className="flex items-center gap-1 p-0.5 rounded-xl bg-dark-900/80 border border-glass-border">
           <button
-            onClick={() => setPreviewSide('front')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => {
+              setPreviewSide('front');
+              if (setActiveSide) setActiveSide('front');
+            }}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               previewSide === 'front'
                 ? 'bg-brand-500 text-white shadow-sm'
-                : 'text-dark-400 hover:text-brand-500'
+                : 'text-dark-400 hover:text-white'
             }`}
           >
-            Front View
+            👕 Front View
           </button>
           <button
-            onClick={() => setPreviewSide('back')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => {
+              setPreviewSide('back');
+              if (setActiveSide) setActiveSide('back');
+            }}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               previewSide === 'back'
                 ? 'bg-brand-500 text-white shadow-sm'
-                : 'text-dark-400 hover:text-brand-500'
+                : 'text-dark-400 hover:text-white'
             }`}
           >
-            Back View
+            🔄 Back View
           </button>
         </div>
       </div>
@@ -218,7 +205,7 @@ const ProductPreview = ({ category, onClose }) => {
 
         {isRendering && (
           <div className="absolute inset-0 bg-dark-950/60 backdrop-blur-xs flex items-center justify-center gap-2 text-xs text-white font-medium">
-            <RefreshCw className="w-4 h-4 text-brand-500 animate-spin" />
+            <RefreshCw className="w-4 h-4 text-brand-400 animate-spin" />
             Generating studio shot...
           </div>
         )}

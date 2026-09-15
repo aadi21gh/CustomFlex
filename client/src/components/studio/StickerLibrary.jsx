@@ -442,7 +442,7 @@ const STICKERS = {
 };
 
 const StickerLibrary = () => {
-  const { fabricRef, syncLayers, pushHistory, activeSide } = useStudio();
+  const { fabricRef, syncLayers, pushHistory, activeSide, addCanvasObject } = useStudio();
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -476,30 +476,28 @@ const StickerLibrary = () => {
 
     fabric.loadSVGFromString(sticker.svgString, (objects, options) => {
       const obj = fabric.util.groupSVGElements(objects, options);
-      
-      const offset = 30;
-      const left = (canvas().width - (obj.width || 100)) / 2 + (Math.random() - 0.5) * offset * 2;
-      const top = (canvas().height - (obj.height || 100)) / 2 + (Math.random() - 0.5) * offset * 2;
 
       obj.set({
-        left,
-        top,
         id: `sticker_${Date.now()}`,
         customName: `${sticker.name} Sticker`,
         side: activeSide || 'front',
       });
 
-      const maxDim = 110;
+      const maxDim = 95;
       if (obj.width > maxDim || obj.height > maxDim) {
         const scale = maxDim / Math.max(obj.width, obj.height);
         obj.set({ scaleX: scale, scaleY: scale });
       }
 
-      canvas().add(obj);
-      canvas().setActiveObject(obj);
-      canvas().renderAll();
-      syncLayers();
-      pushHistory();
+      if (addCanvasObject) {
+        addCanvasObject(obj, { side: activeSide });
+      } else {
+        canvas().add(obj);
+        canvas().setActiveObject(obj);
+        canvas().renderAll();
+        syncLayers();
+        pushHistory();
+      }
       toast.success(`Added ${sticker.name}!`, { duration: 1200 });
     });
   };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fabric } from 'fabric';
 import {
   Sliders, Type, Palette, Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight, Sparkles, Check,
@@ -98,7 +99,6 @@ const PropertiesPanel = () => {
 
     if (key === 'shadow') {
       if (value) {
-        const fabric = require('fabric').fabric;
         activeObject.set('shadow', new fabric.Shadow({
           color: props.shadowColor,
           blur: props.shadowBlur,

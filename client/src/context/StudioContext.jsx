@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback } from 'react';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
-import { isTemplateObject, getDefaultProductType } from '@/components/studio/ProductTemplate';
+import { isTemplateObject, getDefaultProductType, getDesignZone, createDesignZoneClipPath } from '@/components/studio/ProductTemplate';
 import { MATERIAL_PRESETS, PATTERN_TEMPLATES } from '@/lib/utils';
 
 const StudioContext = createContext(null);
@@ -27,6 +27,7 @@ export const StudioProvider = ({ children }) => {
   // Product template state
   const [productType, setProductType] = useState('tshirt');
   const [productColor, setProductColor] = useState('#FFFFFF');
+  const [fabricMaterial, setFabricMaterial] = useState('cotton');
   const [activeSide, setActiveSide] = useState('front'); // 'front' | 'back'
   const [textureVersion, setTextureVersion] = useState(0);
 
@@ -84,15 +85,16 @@ export const StudioProvider = ({ children }) => {
         name: obj.customName || obj.type || `Layer ${i + 1}`,
         visible: obj.visible !== false,
         locked: obj.lockMovementX && obj.lockMovementY,
+        side: obj.side || 'front',
         obj,
       })).reverse()
     );
   }, []);
 
-  // Push to history — excludes template objects from serialization
+  // Push to history — excludes template objects from serialization and preserves side
   const pushHistory = useCallback(() => {
     if (!fabricRef.current) return;
-    const allObjects = fabricRef.current.toJSON(['id', 'customName', 'selectable']);
+    const allObjects = fabricRef.current.toJSON(['id', 'customName', 'selectable', 'side']);
     // Filter out template objects so undo/redo doesn't affect product templates
     allObjects.objects = (allObjects.objects || []).filter(
       obj => !obj.id || !obj.id.startsWith('__template__')
@@ -108,22 +110,86 @@ export const StudioProvider = ({ children }) => {
   const undo = useCallback(() => {
     if (historyIndex <= 0 || !fabricRef.current) return;
     const newIndex = historyIndex - 1;
-    fabricRef.current.loadFromJSON(JSON.parse(history[newIndex]), () => {
-      fabricRef.current.renderAll();
+    const canvas = fabricRef.current;
+    canvas.loadFromJSON(JSON.parse(history[newIndex]), () => {
+      canvas.getObjects().forEach((obj) => {
+        if (!isTemplateObject(obj) && obj.id !== '__grid__') {
+          if (!obj.side) obj.side = 'front';
+          obj.visible = (obj.side === activeSide);
+          obj.selectable = (obj.side === activeSide);
+          obj.evented = (obj.side === activeSide);
+        }
+      });
+      canvas.renderAll();
       syncLayers();
     });
     setHistoryIndex(newIndex);
-  }, [history, historyIndex, syncLayers]);
+  }, [history, historyIndex, activeSide, syncLayers]);
 
   const redo = useCallback(() => {
     if (historyIndex >= history.length - 1 || !fabricRef.current) return;
     const newIndex = historyIndex + 1;
-    fabricRef.current.loadFromJSON(JSON.parse(history[newIndex]), () => {
-      fabricRef.current.renderAll();
+    const canvas = fabricRef.current;
+    canvas.loadFromJSON(JSON.parse(history[newIndex]), () => {
+      canvas.getObjects().forEach((obj) => {
+        if (!isTemplateObject(obj) && obj.id !== '__grid__') {
+          if (!obj.side) obj.side = 'front';
+          const isCurrent = obj.side === activeSide;
+          obj.set({
+            visible: isCurrent,
+            selectable: isCurrent,
+            evented: isCurrent,
+          });
+        }
+      });
+      canvas.renderAll();
       syncLayers();
     });
     setHistoryIndex(newIndex);
-  }, [history, historyIndex, syncLayers]);
+  }, [history, historyIndex, activeSide, syncLayers]);
+
+  // Standardized helper to add objects accurately into the active side's printable area
+  const addCanvasObject = useCallback((obj, opts = {}) => {
+    if (!fabricRef.current) return;
+    const canvas = fabricRef.current;
+    const currentSide = opts.side || activeSide || 'front';
+    const zone = getDesignZone(productType, currentSide, canvas.width, canvas.height);
+    const centerX = zone.x + zone.w / 2;
+    const centerY = zone.y + zone.h / 2;
+
+    const isInsideZone =
+      obj.left !== undefined &&
+      obj.left >= zone.x &&
+      obj.left <= zone.x + zone.w &&
+      obj.top >= zone.y &&
+      obj.top <= zone.y + zone.h;
+
+    if (!isInsideZone) {
+      obj.set({
+        left: centerX,
+        top: centerY,
+        originX: 'center',
+        originY: 'center',
+      });
+    }
+
+    const isCurrent = currentSide === activeSide;
+    obj.set({
+      side: currentSide,
+      visible: isCurrent,
+      selectable: isCurrent,
+      evented: isCurrent,
+    });
+
+    canvas.add(obj);
+    canvas.setActiveObject(obj);
+    canvas.bringToFront(obj);
+    canvas.renderAll();
+    syncLayers();
+    pushHistory();
+    notifyTextureUpdate();
+    return obj;
+  }, [productType, activeSide, syncLayers, pushHistory, notifyTextureUpdate]);
 
   // ── NEW: Sync pattern pieces when product type changes ──────────────────
   const syncPatternPieces = useCallback((prodType) => {
@@ -190,7 +256,7 @@ export const StudioProvider = ({ children }) => {
     if (!fabricRef.current) return;
     setIsSaving(true);
     try {
-      const canvasData = fabricRef.current.toJSON(['id', 'customName', 'selectable']);
+      const canvasData = fabricRef.current.toJSON(['id', 'customName', 'selectable', 'side']);
 
       // Generate thumbnail
       const thumbnailDataUrl = fabricRef.current.toDataURL({ format: 'jpeg', quality: 0.7, multiplier: 0.5 });
@@ -236,6 +302,7 @@ export const StudioProvider = ({ children }) => {
   const value = {
     fabricRef,
     canvas,
+    addCanvasObject,
     activeObject,
     setActiveObject,
     layers,
@@ -272,6 +339,8 @@ export const StudioProvider = ({ children }) => {
     setProductType,
     productColor,
     setProductColor,
+    fabricMaterial,
+    setFabricMaterial,
     activeSide,
     setActiveSide,
     textureVersion,
@@ -357,6 +426,8 @@ const DEFAULT_STUDIO_CONTEXT = {
   setProductType: () => {},
   productColor: '#FFFFFF',
   setProductColor: () => {},
+  fabricMaterial: 'cotton',
+  setFabricMaterial: () => {},
   activeSide: 'front',
   setActiveSide: () => {},
   textureVersion: 0,

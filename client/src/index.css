@@ -298,9 +298,24 @@
   .animate-delay-500 { animation-delay: 500ms; }
   .animate-delay-700 { animation-delay: 700ms; }
 
+  /* Keyframe animations used in studio */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideUpIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fadeIn   { animation: fadeIn 0.25s ease forwards; }
+  .animate-slideUp  { animation: slideUpIn 0.3s ease forwards; }
+
   /* Horizontal scrollbar hidden */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* drop-shadow-md utility */
+  .drop-shadow-md { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
 }
 
 /* ─── Fabric.js canvas override ────────────────────────────────────────────── */

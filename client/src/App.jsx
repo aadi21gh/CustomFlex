@@ -53,6 +53,7 @@ const App = () => {
           {/* Protected Routes */}
           <Route path="/choose" element={<ProtectedRoute><Choose /></ProtectedRoute>} />
           <Route path="/customize" element={<ProtectedRoute><CategorySelect /></ProtectedRoute>} />
+          <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
           <Route path="/studio/:category" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
           <Route path="/studio/:category/:designId" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

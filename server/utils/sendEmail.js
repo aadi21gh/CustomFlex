@@ -39,7 +39,7 @@ const getPasswordResetEmail = (name, resetUrl) => ({
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F3EB; color: #5B4636; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
         .card { background: #FFFFFF; border: 1px solid #DFD8C9; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(91,70,54,0.06); }
-        .logo { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #C76D4A, #8A9A7B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 32px; }
+        .logo { font-size: 28px; font-weight: 800; color: #C76D4A; margin-bottom: 32px; }
         h2 { color: #5B4636; font-size: 24px; margin-bottom: 16px; }
         p { color: #6E5F50; line-height: 1.6; margin-bottom: 24px; }
         .btn { display: inline-block; background: linear-gradient(135deg, #C76D4A, #B55938); color: #F7F3EB !important; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(199,109,74,0.3); }
@@ -75,7 +75,7 @@ const getWelcomeEmail = (name) => ({
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F3EB; color: #5B4636; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
         .card { background: #FFFFFF; border: 1px solid #DFD8C9; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(91,70,54,0.06); }
-        .logo { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #C76D4A, #8A9A7B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 32px; }
+        .logo { font-size: 28px; font-weight: 800; color: #C76D4A; margin-bottom: 32px; }
         h2 { color: #5B4636; font-size: 24px; margin-bottom: 16px; }
         p { color: #6E5F50; line-height: 1.6; margin-bottom: 16px; }
         .btn { display: inline-block; background: linear-gradient(135deg, #C76D4A, #B55938); color: #F7F3EB !important; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(199,109,74,0.3); }
@@ -113,7 +113,7 @@ const getRefundEligibleEmail = (name, orderNumber, amount) => ({
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F3EB; color: #5B4636; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
         .card { background: #FFFFFF; border: 1px solid #DFD8C9; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(91,70,54,0.06); }
-        .logo { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #C76D4A, #8A9A7B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 32px; }
+        .logo { font-size: 28px; font-weight: 800; color: #C76D4A; margin-bottom: 32px; }
         .amount { font-size: 48px; font-weight: 800; color: #22c55e; margin: 24px 0; }
         h2 { color: #5B4636; font-size: 24px; margin-bottom: 16px; }
         p { color: #6E5F50; line-height: 1.6; margin-bottom: 16px; }

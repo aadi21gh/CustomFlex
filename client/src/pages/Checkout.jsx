@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShoppingCart, Package, Truck, CreditCard, ArrowRight,
+  ShoppingCart, Package, Truck, CreditCard, ArrowRight, ArrowLeft,
   CheckCircle2, Loader2, Info, ChevronDown, ChevronUp,
   Minus, Plus, Tag, Box, Palette, Star,
 } from 'lucide-react';
@@ -190,74 +190,6 @@ const PriceBreakdown = ({ pricing, isLoading }) => {
   );
 };
 
-/* ─── Material Selector ──────────────────────────────────────────────────────── */
-const MaterialSelector = ({ category, value, onChange }) => {
-  const materials = MATERIALS_BY_CATEGORY[category] || MATERIALS_BY_CATEGORY.accessories;
-  const selected = materials.find((m) => m.id === value) || materials[0];
-
-  return (
-    <div>
-      <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">
-        Material / Fabric
-      </label>
-      <div className="grid grid-cols-2 gap-2">
-        {materials.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => onChange(m.id)}
-            className={`p-3 rounded-xl text-left transition-all duration-200 border ${
-              value === m.id
-                ? 'border-brand-500/60 bg-brand-500/10'
-                : 'border-glass-border hover:border-white/20 hover:bg-white/5'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-0.5">
-              <p className="text-xs font-semibold text-white">{m.label}</p>
-              {m.addOn > 0 ? (
-                <span className="text-[10px] font-bold text-blue-400">+₹{m.addOn}</span>
-              ) : (
-                <span className="text-[10px] font-medium text-emerald-500">Free</span>
-              )}
-            </div>
-            <p className="text-[10px] text-dark-500 leading-tight">{m.description}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-/* ─── Print Area Selector (clothing only) ────────────────────────────────────── */
-const PrintAreaSelector = ({ value, onChange, category }) => {
-  // Only show for clothing; artwork/accessories use 'standard'
-  if (category !== 'clothing') return null;
-  const areas = PRINT_AREAS.filter((a) => a.id !== 'standard');
-
-  return (
-    <div>
-      <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">
-        Print Area
-      </label>
-      <div className="flex flex-wrap gap-2">
-        {areas.map((a) => (
-          <button
-            key={a.id}
-            onClick={() => onChange(a.id)}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
-              value === a.id
-                ? 'border-brand-500 bg-brand-500/20 text-brand-300'
-                : 'border-glass-border text-dark-400 hover:text-white hover:border-white/20'
-            }`}
-          >
-            <span>{a.label}</span>
-            <span className="ml-1 opacity-70">+₹{a.charge}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 /* ─── Quantity Stepper ───────────────────────────────────────────────────────── */
 const QuantityStepper = ({ value, onChange }) => (
   <div>
@@ -291,12 +223,33 @@ const QuantityStepper = ({ value, onChange }) => (
   </div>
 );
 
+const SUBCATEGORY_MAP = {
+  tshirt: 't-shirt',
+  oversized: 'oversized-tee',
+  hoodie: 'hoodie',
+  sweatshirt: 'sweatshirt',
+  longsleeve: 'longsleeve',
+  tanktop: 'tank-top',
+  polo: 'polo-shirt',
+  jacket: 'jacket',
+  jersey: 'jersey',
+  canvas: 'canvas-print',
+  poster: 'poster',
+  acrylic: 'acrylic-print',
+  phonecase: 'phone-case',
+  totebag: 'tote-bag',
+  cap: 'cap',
+};
+
 /* ─── Main Checkout Page ─────────────────────────────────────────────────────── */
 const Checkout = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const designId = params.get('designId');
   const category = params.get('category') || 'clothing';
+  const productTypeParam = params.get('productType');
+  const materialParam = params.get('material');
+  const colorParam = params.get('color');
 
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -307,10 +260,10 @@ const Checkout = () => {
   const [design, setDesign] = useState(null);
 
   const [options, setOptions] = useState({
-    material: params.get('material') || DEFAULT_MATERIALS[category] || 'standard',
+    material: materialParam || DEFAULT_MATERIALS[category] || 'cotton',
     printArea: category === 'clothing' ? 'front' : 'standard',
-    size: '',
-    color: '',
+    size: 'M',
+    color: colorParam || '#FFFFFF',
     quantity: 1,
     deliveryMethod: 'standard',
   });
@@ -333,16 +286,30 @@ const Checkout = () => {
       .catch(() => toast.error('Failed to load design details'));
   }, [designId]);
 
-  // Load products by category
+  // Load products by category and auto-match studio selection
   useEffect(() => {
     api.get(`/products?category=${category}`)
       .then(({ data }) => {
-        setProducts(data.products);
-        if (data.products.length > 0) setSelectedProduct(data.products[0]);
+        const prodList = data.products || [];
+        setProducts(prodList);
+        if (prodList.length > 0) {
+          const targetSub = SUBCATEGORY_MAP[productTypeParam] || productTypeParam;
+          const matched = prodList.find(
+            (p) => p.subcategory === targetSub || p.subcategory?.includes(productTypeParam) || p._id === productTypeParam
+          ) || prodList[0];
+
+          setSelectedProduct(matched);
+          setOptions((prev) => ({
+            ...prev,
+            material: materialParam || matched.defaultMaterial || DEFAULT_MATERIALS[category] || 'cotton',
+            color: colorParam || prev.color || '#FFFFFF',
+            size: matched.sizes?.includes('M') ? 'M' : (matched.sizes?.[0] || 'M'),
+          }));
+        }
       })
-      .catch(() => toast.error('Failed to load products'))
+      .catch(() => toast.error('Failed to load product details'))
       .finally(() => setIsLoadingProducts(false));
-  }, [category]);
+  }, [category, productTypeParam, materialParam, colorParam]);
 
   // Recalculate price whenever options, product, or applied coupon changes
   const recalculate = useCallback(async () => {
@@ -445,22 +412,41 @@ const Checkout = () => {
     }
   };
 
+  const handleGoBackToStudio = () => {
+    if (designId) {
+      navigate(`/studio/${category}/${designId}?productType=${productTypeParam || ''}&material=${options.material || ''}&color=${encodeURIComponent(options.color || '')}`);
+    } else {
+      navigate(`/studio?category=${category}&productType=${productTypeParam || ''}&material=${options.material || ''}&color=${encodeURIComponent(options.color || '')}`);
+    }
+  };
+
   return (
     <div className="min-h-screen mesh-bg">
       <Navbar />
       <div className="section-container pt-24 pb-16">
 
-        {/* Page title */}
+        {/* Page header with Back to Studio button */}
         <motion.div
-          className="mb-8"
+          className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-3 mb-1">
-            <ShoppingCart className="w-7 h-7 text-brand-400" />
-            <h1 className="text-3xl font-black text-white">Checkout</h1>
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <ShoppingCart className="w-7 h-7 text-brand-400" />
+              <h1 className="text-3xl font-black text-white">Checkout</h1>
+            </div>
+            <p className="text-dark-400 ml-10">Review your options and complete your custom order</p>
           </div>
-          <p className="text-dark-400 ml-10">Review your options and complete your custom order</p>
+
+          <button
+            type="button"
+            onClick={handleGoBackToStudio}
+            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl border border-glass-border bg-dark-900/60 hover:bg-dark-800 text-sm font-semibold text-dark-200 hover:text-white transition-all shadow-sm group"
+          >
+            <ArrowLeft className="w-4 h-4 text-brand-400 group-hover:-translate-x-1 transition-transform" />
+            <span>Back to Studio</span>
+          </button>
         </motion.div>
 
         <div className="grid lg:grid-cols-[1fr_400px] gap-8">
@@ -468,72 +454,81 @@ const Checkout = () => {
           {/* ── Left: Configuration ── */}
           <div className="space-y-6">
 
-            {/* Design preview card */}
-            {design && (
-              <motion.div
-                className="glass-card p-5 flex items-center gap-5"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <div className="w-20 h-20 rounded-xl overflow-hidden border border-glass-border bg-dark-900 flex-shrink-0 flex items-center justify-center">
-                  {design.thumbnail?.url ? (
-                    <img src={design.thumbnail.url} alt={design.title} className="w-full h-full object-contain" />
-                  ) : (
-                    <Palette className="w-8 h-8 text-dark-500" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider mb-1">Your Design</p>
-                  <h3 className="text-white font-bold text-lg truncate">{design.title}</h3>
-                  <p className="text-dark-400 text-sm capitalize">{category} • Custom Print</p>
-                </div>
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-              </motion.div>
-            )}
-
-            {/* Product Selection */}
+            {/* Configured Design & Product Card */}
             <motion.div
               className="glass-card p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              transition={{ delay: 0.1 }}
             >
-              <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                <Package className="w-4 h-4 text-brand-400" />
-                Select Product
-              </h2>
-              {isLoadingProducts ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-20 rounded-xl bg-white/5 animate-pulse" />
-                  ))}
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-glass-border">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-brand-400" />
+                  <h2 className="text-base font-bold text-white">Custom Product &amp; Design</h2>
                 </div>
-              ) : products.length === 0 ? (
-                <p className="text-dark-500 text-sm text-center py-6">No products found for this category</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {products.map((p) => (
-                    <button
-                      key={p._id}
-                      onClick={() => setSelectedProduct(p)}
-                      className={`p-4 rounded-xl border text-left transition-all duration-200 ${
-                        selectedProduct?._id === p._id
-                          ? 'border-brand-500/60 bg-brand-500/10'
-                          : 'border-glass-border hover:border-white/20 hover:bg-white/5'
-                      }`}
-                    >
-                      <p className="text-lg mb-1">{p.emoji || '🎁'}</p>
-                      <p className="text-sm font-semibold text-white leading-tight">{p.name}</p>
-                      <p className="text-xs text-dark-400 capitalize mt-0.5">{p.subcategory}</p>
-                      <p className="text-sm font-bold text-brand-400 mt-1.5">from {formatPrice(p.basePrice)}</p>
-                    </button>
-                  ))}
+                <button
+                  type="button"
+                  onClick={handleGoBackToStudio}
+                  className="text-xs text-brand-400 hover:text-brand-300 font-semibold transition-colors flex items-center gap-1"
+                >
+                  <span>Edit in Studio</span>
+                  <span>→</span>
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden border border-glass-border bg-dark-900 flex-shrink-0 flex items-center justify-center relative shadow-inner">
+                  {design?.thumbnail?.url ? (
+                    <img src={design.thumbnail.url} alt={design.title} className="w-full h-full object-contain" />
+                  ) : (
+                    <Palette className="w-10 h-10 text-dark-500" />
+                  )}
                 </div>
-              )}
+
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-2xl">{selectedProduct?.emoji || '🎁'}</span>
+                    <h3 className="text-white font-black text-lg tracking-tight truncate">
+                      {selectedProduct?.name || 'Custom Product'}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-wider">
+                      Studio Configured
+                    </span>
+                  </div>
+
+                  {design?.title && (
+                    <p className="text-xs text-dark-300 font-medium truncate">
+                      Design: <span className="text-white font-semibold">{design.title}</span>
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-1 flex-wrap">
+                    {/* Color chip */}
+                    {options.color && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-glass-border text-xs text-dark-200">
+                        <span className="w-3 h-3 rounded-full border border-white/30 shadow-sm" style={{ background: options.color }} />
+                        <span className="font-mono text-[11px] uppercase">{options.color}</span>
+                      </div>
+                    )}
+
+                    {/* Fabric / Material chip */}
+                    {pricing?.materialLabel && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-glass-border text-xs text-dark-200">
+                        <Palette className="w-3 h-3 text-brand-400" />
+                        <span className="font-semibold">{pricing.materialLabel}</span>
+                        {pricing.materialPrice > 0 ? (
+                          <span className="text-[10px] text-blue-400 font-bold">(+₹{pricing.materialPrice})</span>
+                        ) : (
+                          <span className="text-[10px] text-emerald-400 font-bold">(Included)</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
-            {/* Material & Print Area */}
+            {/* Sizing & Quantity Options */}
             <motion.div
               className="glass-card p-6 space-y-6"
               initial={{ opacity: 0, y: 20 }}
@@ -541,29 +536,26 @@ const Checkout = () => {
               transition={{ delay: 0.2 }}
             >
               <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Palette className="w-4 h-4 text-brand-400" />
-                Customization Options
+                <Box className="w-4 h-4 text-brand-400" />
+                Size &amp; Quantity
               </h2>
-
-              <MaterialSelector
-                category={category}
-                value={options.material}
-                onChange={(v) => setOptions((o) => ({ ...o, material: v }))}
-              />
 
               {/* Size picker */}
               {selectedProduct?.sizes?.length > 0 && (
                 <div>
-                  <label className="text-xs font-semibold text-dark-300 block mb-2 uppercase tracking-wider">Size</label>
-                  <div className="flex flex-wrap gap-2">
+                  <label className="text-xs font-semibold text-dark-300 block mb-2.5 uppercase tracking-wider">
+                    Select Size
+                  </label>
+                  <div className="flex flex-wrap gap-2.5">
                     {selectedProduct.sizes.map((s) => (
                       <button
                         key={s}
+                        type="button"
                         onClick={() => setOptions((o) => ({ ...o, size: s }))}
-                        className={`px-3.5 py-1.5 rounded-lg text-sm font-bold border transition-all ${
+                        className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                           options.size === s
-                            ? 'border-brand-500 bg-brand-500/20 text-brand-300'
-                            : 'border-glass-border text-dark-400 hover:text-white hover:border-white/20'
+                            ? 'border-brand-500 bg-brand-500/20 text-brand-300 shadow-sm scale-105'
+                            : 'border-glass-border text-dark-300 hover:text-white hover:border-white/20 hover:bg-white/5'
                         }`}
                       >
                         {s}

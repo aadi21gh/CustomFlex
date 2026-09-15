@@ -21,7 +21,7 @@ let _clipboard = null;
 const StudioToolbar = () => {
   const {
     fabricRef, selectedTool, setSelectedTool, syncLayers, pushHistory,
-    brushColor, setBrushColor,
+    brushColor, setBrushColor, addCanvasObject,
   } = useStudio();
   const fileRef = useRef(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -31,29 +31,31 @@ const StudioToolbar = () => {
   /* ── Add Text ── */
   const addText = () => {
     if (!canvas()) return;
-    const text = new fabric.IText('Click to edit text', {
-      left: 120, top: 120,
-      fontSize: 32,
+    const text = new fabric.IText('Your Text Here', {
+      fontSize: 28,
       fill: '#5B4636',
       fontFamily: 'Inter',
-      fontWeight: '600',
+      fontWeight: '700',
       id: `text_${Date.now()}`,
       customName: 'Text Layer',
     });
-    canvas().add(text);
-    canvas().setActiveObject(text);
-    canvas().renderAll();
+    if (addCanvasObject) {
+      addCanvasObject(text);
+    } else {
+      canvas().add(text);
+      canvas().setActiveObject(text);
+      canvas().renderAll();
+      pushHistory();
+      syncLayers();
+    }
     text.enterEditing();
     setSelectedTool('select');
-    pushHistory();
-    syncLayers();
   };
 
   /* ── Add Shape ── */
   const addShape = (type) => {
     if (!canvas()) return;
     const opts = {
-      left: 150, top: 150,
       fill: '#C76D4A',
       id: `${type}_${Date.now()}`,
       customName: `${type.charAt(0).toUpperCase() + type.slice(1)}`,
@@ -62,38 +64,42 @@ const StudioToolbar = () => {
     let shape;
     switch (type) {
       case 'rect':
-        shape = new fabric.Rect({ ...opts, width: 120, height: 80, rx: 10, ry: 10 });
+        shape = new fabric.Rect({ ...opts, width: 110, height: 75, rx: 8, ry: 8 });
         break;
       case 'circle':
-        shape = new fabric.Circle({ ...opts, radius: 60 });
+        shape = new fabric.Circle({ ...opts, radius: 45 });
         break;
       case 'triangle':
-        shape = new fabric.Triangle({ ...opts, width: 120, height: 100 });
+        shape = new fabric.Triangle({ ...opts, width: 95, height: 85 });
         break;
       case 'line':
-        shape = new fabric.Line([50, 100, 250, 100], {
+        shape = new fabric.Line([-55, 0, 55, 0], {
           ...opts, stroke: '#C76D4A', strokeWidth: 3, fill: '',
         });
         break;
       case 'star': {
         const pts = [];
         for (let i = 0; i < 10; i++) {
-          const r = i % 2 === 0 ? 60 : 25;
+          const r = i % 2 === 0 ? 45 : 18;
           const angle = (i * Math.PI) / 5 - Math.PI / 2;
           pts.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
         }
-        shape = new fabric.Polygon(pts, { ...opts, left: 200, top: 200 });
+        shape = new fabric.Polygon(pts, { ...opts });
         break;
       }
       default: return;
     }
 
-    canvas().add(shape);
-    canvas().setActiveObject(shape);
-    canvas().renderAll();
+    if (addCanvasObject) {
+      addCanvasObject(shape);
+    } else {
+      canvas().add(shape);
+      canvas().setActiveObject(shape);
+      canvas().renderAll();
+      pushHistory();
+      syncLayers();
+    }
     setSelectedTool('select');
-    pushHistory();
-    syncLayers();
   };
 
   /* ── Upload Image ── */
@@ -104,20 +110,23 @@ const StudioToolbar = () => {
     reader.onload = (ev) => {
       fabric.Image.fromURL(ev.target.result, (img) => {
         if (!canvas()) return;
-        const maxW = canvas().width * 0.6;
-        const maxH = canvas().height * 0.6;
+        const maxW = 160;
+        const maxH = 160;
         const scale = Math.min(maxW / img.width, maxH / img.height, 1);
         img.set({
           scaleX: scale, scaleY: scale,
-          left: 60, top: 60,
           id: `img_${Date.now()}`,
           customName: 'Image Layer',
         });
-        canvas().add(img);
-        canvas().setActiveObject(img);
-        canvas().renderAll();
-        pushHistory();
-        syncLayers();
+        if (addCanvasObject) {
+          addCanvasObject(img);
+        } else {
+          canvas().add(img);
+          canvas().setActiveObject(img);
+          canvas().renderAll();
+          pushHistory();
+          syncLayers();
+        }
       });
     };
     reader.readAsDataURL(file);

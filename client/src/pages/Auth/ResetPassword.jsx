@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, Eye, EyeOff, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/utils';
+import BrandLogo from '@/components/common/BrandLogo';
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -39,10 +40,9 @@ const ResetPassword = () => {
   return (
     <div className="min-h-screen mesh-bg flex items-center justify-center p-4">
       <motion.div className="w-full max-w-md" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-        <Link to="/" className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}><Sparkles className="w-5 h-5 text-white" /></div>
-          <span className="text-2xl font-bold text-white">Custom<span className="gradient-text">Flex</span></span>
-        </Link>
+        <div className="flex justify-center mb-8">
+          <BrandLogo size="lg" />
+        </div>
         <div className="glass-card-strong p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>

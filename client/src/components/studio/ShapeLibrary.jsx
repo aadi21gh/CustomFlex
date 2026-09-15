@@ -49,23 +49,28 @@ const GRADIENTS = [
 ];
 
 const ShapeLibrary = () => {
-  const { fabricRef, syncLayers } = useStudio();
+  const { fabricRef, syncLayers, addCanvasObject, activeSide } = useStudio();
   const canvas = () => fabricRef.current;
 
   const addShape = (shapeDef) => {
     if (!canvas()) return;
     const shape = shapeDef.create(canvas());
-    shape.set({ left: 80 + Math.random() * 100, top: 80 + Math.random() * 100, id: `shape_${Date.now()}`, customName: `${shapeDef.name}` });
-    canvas().add(shape);
-    canvas().setActiveObject(shape);
-    canvas().renderAll();
+    shape.set({ id: `shape_${Date.now()}`, customName: `${shapeDef.name}`, side: activeSide || 'front' });
+    if (addCanvasObject) {
+      addCanvasObject(shape, { side: activeSide });
+    } else {
+      canvas().add(shape);
+      canvas().setActiveObject(shape);
+      canvas().renderAll();
+    }
   };
 
   const addGradient = (grad) => {
     if (!canvas()) return;
     const rect = new fabric.Rect({
-      width: 150, height: 100, rx: 12, ry: 12,
-      left: 100, top: 100, id: `grad_${Date.now()}`, customName: `${grad.name} Gradient`,
+      width: 140, height: 90, rx: 12, ry: 12,
+      id: `grad_${Date.now()}`, customName: `${grad.name} Gradient`,
+      side: activeSide || 'front',
       fill: new fabric.Gradient({
         type: 'linear',
         gradientUnits: 'percentage',
@@ -73,17 +78,25 @@ const ShapeLibrary = () => {
         colorStops: [{ offset: 0, color: grad.colors[0] }, { offset: 1, color: grad.colors[1] }],
       }),
     });
-    canvas().add(rect);
-    canvas().setActiveObject(rect);
-    canvas().renderAll();
+    if (addCanvasObject) {
+      addCanvasObject(rect, { side: activeSide });
+    } else {
+      canvas().add(rect);
+      canvas().setActiveObject(rect);
+      canvas().renderAll();
+    }
   };
 
   const addColorRect = (color) => {
     if (!canvas()) return;
-    const rect = new fabric.Rect({ width: 80, height: 80, rx: 8, fill: color, left: 100, top: 100, id: `color_${Date.now()}`, customName: 'Color Block' });
-    canvas().add(rect);
-    canvas().setActiveObject(rect);
-    canvas().renderAll();
+    const rect = new fabric.Rect({ width: 75, height: 75, rx: 8, fill: color, id: `color_${Date.now()}`, customName: 'Color Block', side: activeSide || 'front' });
+    if (addCanvasObject) {
+      addCanvasObject(rect, { side: activeSide });
+    } else {
+      canvas().add(rect);
+      canvas().setActiveObject(rect);
+      canvas().renderAll();
+    }
   };
 
   return (
@@ -140,10 +153,10 @@ const ShapeLibrary = () => {
         <p className="text-2xs font-semibold text-dark-500 uppercase tracking-widest mb-3">Quick Text</p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: 'Heading', size: 48, weight: '800' },
-            { label: 'Subheading', size: 28, weight: '600' },
-            { label: 'Body', size: 18, weight: '400' },
-            { label: 'Caption', size: 13, weight: '400' },
+            { label: 'Heading', size: 36, weight: '800' },
+            { label: 'Subheading', size: 24, weight: '600' },
+            { label: 'Body', size: 16, weight: '400' },
+            { label: 'Caption', size: 12, weight: '400' },
           ].map(({ label, size, weight }) => (
             <button
               key={label}
@@ -151,12 +164,17 @@ const ShapeLibrary = () => {
                 if (!canvas()) return;
                 const text = new fabric.IText(label, {
                   fontSize: size, fontWeight: weight, fill: '#5B4636',
-                  fontFamily: 'Inter', left: 80, top: 80,
+                  fontFamily: 'Inter',
                   id: `text_${Date.now()}`, customName: `${label} Text`,
+                  side: activeSide || 'front',
                 });
-                canvas().add(text);
-                canvas().setActiveObject(text);
-                canvas().renderAll();
+                if (addCanvasObject) {
+                  addCanvasObject(text, { side: activeSide });
+                } else {
+                  canvas().add(text);
+                  canvas().setActiveObject(text);
+                  canvas().renderAll();
+                }
               }}
               className="py-3 px-2 rounded-xl text-center border border-glass-border hover:border-brand-500/40 hover:bg-brand-500/10 transition-all text-white"
               style={{ fontSize: Math.max(12, Math.min(size * 0.4, 18)) }}

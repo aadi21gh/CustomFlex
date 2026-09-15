@@ -7,12 +7,18 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/utils';
+import BrandLogo from '@/components/common/BrandLogo';
 
 const Register = () => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirm: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -23,11 +29,11 @@ const Register = () => {
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.email) errs.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Invalid email';
+    if (!form.name.trim()) errs.name = 'Full name is required';
+    if (!form.email.trim()) errs.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Invalid email address';
     if (!form.password) errs.password = 'Password is required';
-    else if (form.password.length < 6) errs.password = 'Minimum 6 characters';
+    else if (form.password.length < 6) errs.password = 'Password must be at least 6 characters';
     if (form.password !== form.confirm) errs.confirm = 'Passwords do not match';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -39,7 +45,7 @@ const Register = () => {
     setIsLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      toast.success('Welcome to Crexza! ✨');
+      toast.success('Account created! Welcome aboard 🎉');
       navigate('/choose');
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -48,7 +54,9 @@ const Register = () => {
     }
   };
 
-  const handleGoogleLogin = () => { window.location.href = `${import.meta.env.VITE_API_URL || '/api'}/auth/google`; };
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || '/api'}/auth/google`;
+  };
 
   const passwordStrength = () => {
     const p = form.password;
@@ -68,9 +76,10 @@ const Register = () => {
 
   return (
     <div className="min-h-screen mesh-bg flex items-center justify-center p-4">
+      {/* Background orbs */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full opacity-10 animate-float" style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)' }} />
-        <div className="absolute bottom-1/3 left-1/4 w-80 h-80 rounded-full opacity-8 animate-float-slow" style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full opacity-10 animate-float" style={{ background: 'radial-gradient(circle, #C76D4A, transparent 70%)' }} />
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full opacity-8 animate-float-slow" style={{ background: 'radial-gradient(circle, #8A9A7B, transparent 70%)', animationDelay: '3s' }} />
       </div>
 
       <motion.div
@@ -79,12 +88,9 @@ const Register = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Link to="/" className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-white">Custom<span className="gradient-text">Flex</span></span>
-        </Link>
+        <div className="flex justify-center mb-8">
+          <BrandLogo size="lg" />
+        </div>
 
         <div className="glass-card-strong p-8">
           <div className="text-center mb-8">

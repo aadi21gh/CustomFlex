@@ -78,6 +78,9 @@ export default {
         '4xl': '2rem',
         '5xl': '2.5rem',
       },
+      scale: {
+        '102': '1.02',
+      },
       animation: {
         'float': 'float 6s ease-in-out infinite',
         'float-slow': 'float 10s ease-in-out infinite',

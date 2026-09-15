@@ -668,12 +668,34 @@ const QuickTemplateCustomizer = ({
 
   const isGarment = category === 'clothing' || ['tshirt', 'oversized', 'hoodie', 'sweatshirt', 'longsleeve', 'tanktop', 'polo', 'jacket'].includes(productType);
 
+  // Map template id → specific product type for distinct mockup thumbnails
+  const TEMPLATE_PRODUCT_MAP = {
+    'signature-smiley':    'tshirt',
+    'tokyo-streetwear':    'oversized',
+    'varsity-athletic':    'sweatshirt',
+    'luxury-monogram':     'hoodie',
+    'polaroid-frame':      'tshirt',
+    'retro-mountain':      'jacket',
+    'bauhaus-poster':      'poster',
+    'botanical-art':       'canvas',
+    'cyber-matrix':        'phonecase',
+    'vintage-crest-patch': 'totebag',
+  };
+
+  // Category badge meta for template cards
+  const CATEGORY_META = {
+    clothing:    { label: '👕 Clothing',    style: { color: '#D97706', background: 'rgba(217,119,6,0.12)', borderColor: 'rgba(217,119,6,0.3)' } },
+    artwork:     { label: '🖼️ Wall Art',    style: { color: '#7C3AED', background: 'rgba(124,58,237,0.12)', borderColor: 'rgba(124,58,237,0.3)' } },
+    accessories: { label: '📱 Accessory',   style: { color: '#0891B2', background: 'rgba(8,145,178,0.12)', borderColor: 'rgba(8,145,178,0.3)' } },
+    all:         { label: '✦ Universal',    style: { color: '#C76D4A', background: 'rgba(199,109,74,0.12)', borderColor: 'rgba(199,109,74,0.3)' } },
+  };
+
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-dark-950">
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-dark-950 min-h-0">
       {/* ══════════════════════════════════════════════════════════════════════
           LEFT SIDEBAR: Easy Creative Toolkit
           ══════════════════════════════════════════════════════════════════════ */}
-      <div className="w-full md:w-[420px] lg:w-[450px] flex-shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-glass-border bg-dark-950/95 backdrop-blur-xl z-20 max-h-[50vh] md:max-h-none overflow-hidden shadow-xl">
+      <div className="w-full md:w-[420px] lg:w-[450px] flex-shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-glass-border bg-dark-950/95 backdrop-blur-xl z-20 h-[46vh] md:h-auto md:max-h-none overflow-hidden shadow-xl">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-1 p-2 border-b border-glass-border bg-dark-900/40 overflow-x-auto no-scrollbar flex-shrink-0">
           {[
@@ -734,7 +756,10 @@ const QuickTemplateCustomizer = ({
               <div className="grid grid-cols-2 gap-3">
                 {filteredTemplates.map((t) => {
                   const isSelected = currentTemplate.id === t.id;
-                  const tMockup = getMockup(t.category === 'artwork' ? 'canvas' : t.category === 'accessories' ? 'phonecase' : 'tshirt');
+                  // Use per-template product map for distinct thumbnails
+                  const productId = TEMPLATE_PRODUCT_MAP[t.id] || (t.category === 'artwork' ? 'canvas' : t.category === 'accessories' ? 'phonecase' : 'tshirt');
+                  const tMockup = getMockup(productId);
+                  const catMeta = CATEGORY_META[t.category] || CATEGORY_META.all;
 
                   return (
                     <motion.div
@@ -742,36 +767,48 @@ const QuickTemplateCustomizer = ({
                       onClick={() => handleSelectTemplate(t)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`relative p-2.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between overflow-hidden ${
+                      className={`relative p-2.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
                         isSelected
                           ? 'bg-brand-500/15 border-brand-500 ring-2 ring-brand-500/30 shadow-lg'
                           : 'glass-card border-glass-border hover:border-dark-600'
                       }`}
                     >
-                      {t.badge && (
-                        <span className="absolute top-2 right-2 tag text-[9px] !py-0.5 !px-1.5 z-10 shadow-sm">
-                          {t.badge}
-                        </span>
-                      )}
-
                       {/* Mockup image thumbnail */}
-                      <div className="w-full h-28 rounded-xl bg-dark-900/40 overflow-hidden relative mb-2 flex items-center justify-center border border-glass-border">
+                      <div className="w-full h-28 rounded-xl bg-dark-900/60 overflow-hidden relative mb-2 flex items-center justify-center border border-glass-border/60">
                         <img
                           src={tMockup.front}
                           alt={t.name}
-                          className="w-full h-full object-cover object-center"
+                          className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
+                          style={{ filter: t.defaultColors?.garment && t.defaultColors.garment !== '#FFFFFF' ? `brightness(0.92) sepia(0.12)` : undefined }}
                         />
-                        <div className="absolute inset-0 bg-dark-950/20" />
+                        {/* Subtle dark vignette */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-dark-950/50 via-transparent to-transparent" />
+
+                        {/* Category pill — bottom left */}
+                        <span
+                          className="absolute bottom-1.5 left-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded-md border"
+                          style={catMeta.style}
+                        >
+                          {catMeta.label}
+                        </span>
+
+                        {/* Template badge — top right */}
+                        {t.badge && (
+                          <span className="absolute top-1.5 right-1.5 tag text-[8px] !py-0.5 !px-1.5 z-10 shadow-sm">
+                            {t.badge}
+                          </span>
+                        )}
+
                         {isSelected && (
-                          <div className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full bg-brand-500 flex items-center justify-center text-white shadow-sm">
+                          <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-brand-500 flex items-center justify-center text-white shadow-md">
                             <Check className="w-3 h-3 stroke-[3]" />
                           </div>
                         )}
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-xs text-white line-clamp-1 group-hover:text-brand-400">
+                        <h4 className="font-bold text-xs text-white line-clamp-1 group-hover:text-brand-400 transition-colors">
                           {t.name}
                         </h4>
                         <p className="text-2xs text-dark-400 line-clamp-1 mt-0.5">
@@ -1192,16 +1229,47 @@ const QuickTemplateCustomizer = ({
                     <button
                       key={hex}
                       onClick={() => setProductColor(hex)}
-                      className={`h-9 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                      title={label}
+                      className={`h-10 rounded-xl border-2 flex items-center justify-center transition-all relative overflow-hidden ${
                         productColor === hex
-                          ? 'ring-2 ring-brand-500 ring-offset-2 ring-offset-dark-950 scale-105'
-                          : 'border-glass-border hover:scale-102'
+                          ? 'border-brand-500 ring-2 ring-brand-500/40 ring-offset-2 ring-offset-dark-950 scale-110 shadow-lg shadow-brand-500/20'
+                          : 'border-glass-border hover:scale-105 hover:border-dark-500'
                       }`}
                       style={{ background: hex }}
-                      title={label}
-                    />
+                    >
+                      {productColor === hex && (
+                        <Check
+                          className="w-4 h-4 stroke-[3] drop-shadow-md"
+                          style={{ color: hex === '#FFFFFF' || hex === '#F7F3EB' || hex === '#FAF7F0' ? '#1C1917' : '#FFFFFF' }}
+                        />
+                      )}
+                    </button>
                   ))}
                 </div>
+                {/* Selected color name label */}
+                <p className="text-2xs text-brand-400 font-semibold">
+                  {GARMENT_COLORS.find(c => c.hex === productColor)?.label || 'Custom Color'}
+                  {' '}<span className="text-dark-500 font-mono">{productColor}</span>
+                </p>
+              </div>
+
+              {/* Custom hex color input */}
+              <div className="flex items-center gap-2 p-3 rounded-xl glass-card border border-glass-border">
+                <div
+                  className="w-8 h-8 rounded-lg border border-glass-border flex-shrink-0"
+                  style={{ background: productColor }}
+                />
+                <div className="flex-1">
+                  <label className="text-2xs font-bold uppercase tracking-wider text-dark-400 block mb-0.5">Custom Hex Color</label>
+                  <input
+                    type="color"
+                    value={productColor}
+                    onChange={(e) => setProductColor(e.target.value)}
+                    className="w-full h-7 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                    title="Pick any garment color"
+                  />
+                </div>
+                <span className="text-xs font-mono text-dark-300">{productColor}</span>
               </div>
 
               {/* Curated Theme Presets */}
@@ -1214,16 +1282,23 @@ const QuickTemplateCustomizer = ({
                       onClick={() => {
                         setColorValues({ text: preset.text, accent: preset.accent });
                         setProductColor(preset.bg);
-                        toast.success(`Applied ${preset.label} theme!`);
+                        toast.success(`Applied "${preset.label}" theme!`);
                       }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl glass-card border border-glass-border hover:border-brand-500/50 transition-all text-left"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl glass-card border border-glass-border hover:border-brand-500/50 hover:bg-brand-500/5 transition-all text-left group"
                     >
-                      <span className="text-xs font-bold text-white">{preset.label}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full border border-glass-border" style={{ background: preset.text }} />
-                        <span className="w-4 h-4 rounded-full border border-glass-border" style={{ background: preset.accent }} />
-                        <span className="w-4 h-4 rounded-full border border-glass-border" style={{ background: preset.bg }} />
+                      <div className="flex items-center gap-2">
+                        {/* Mini color preview swatch */}
+                        <div className="w-8 h-8 rounded-lg flex-shrink-0 overflow-hidden border border-glass-border grid grid-cols-3">
+                          <span style={{ background: preset.bg }} />
+                          <span style={{ background: preset.accent }} />
+                          <span style={{ background: preset.text }} />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-white block group-hover:text-brand-400 transition-colors">{preset.label}</span>
+                          <span className="text-2xs text-dark-500 font-mono">{preset.bg} · {preset.accent}</span>
+                        </div>
                       </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-dark-500 group-hover:text-brand-500 transition-colors" />
                     </button>
                   ))}
                 </div>
@@ -1280,9 +1355,9 @@ const QuickTemplateCustomizer = ({
       {/* ══════════════════════════════════════════════════════════════════════
           CENTER WORKSPACE: Interactive Photorealistic Studio Canvas
           ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col items-center justify-between p-3 sm:p-5 bg-dark-950/60 overflow-y-auto relative">
+      <div className="flex-1 flex flex-col items-center justify-between p-3 sm:p-5 bg-dark-950/60 overflow-y-auto relative min-h-0">
         {/* Top Floating Control Bar */}
-        <div className="w-full max-w-4xl flex items-center justify-between gap-2.5 p-2.5 px-4 rounded-2xl glass-card-strong border border-glass-border mb-2 z-10 shadow-lg">
+        <div className="w-full max-w-4xl flex items-center justify-between gap-2 p-2 px-3 rounded-2xl glass-card-strong border border-glass-border mb-2 z-10 shadow-lg flex-shrink-0">
           {/* Product Switcher Dropdown */}
           <div className="relative flex-shrink-0">
             <button
@@ -1376,42 +1451,46 @@ const QuickTemplateCustomizer = ({
           </div>
         </div>
 
-        {/* ── Live Photorealistic Studio Canvas ───────────────────────────── */}
-        <div className="w-full flex-1 flex items-center justify-center relative min-h-[380px] sm:min-h-[500px]">
+        {/* ── Live Photorealistic Studio Canvas ─────────────────────────────────── */}
+        <div className="w-full flex-1 flex items-center justify-center relative min-h-[260px] sm:min-h-[420px]">
           <StudioCanvas category={category} />
         </div>
 
-        {/* ── Bottom Floating Bar: Sizing, Material Badge & Dynamic Order Button ─────── */}
-        <div className="w-full max-w-4xl flex items-center justify-between gap-3 p-2.5 px-4 rounded-2xl glass-card-strong border border-glass-border mt-2 z-10 shadow-lg flex-wrap sm:flex-nowrap">
+        {/* ── Bottom Floating Bar ───────────────────────────────────────────────── */}
+        <div className="w-full max-w-4xl flex items-center gap-2 p-2 px-3 rounded-2xl glass-card-strong border border-glass-border mt-2 z-10 shadow-lg flex-shrink-0">
           {/* Active Configuration Info */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xs font-bold uppercase text-dark-400">Color:</span>
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Garment Color Swatch */}
+            <button
+              onClick={() => setActiveTab('colors')}
+              title={`Garment: ${productColor}`}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-dark-900/80 border border-glass-border hover:border-brand-500/40 transition-all flex-shrink-0"
+            >
               <span
-                className="w-5 h-5 rounded-full border border-glass-border shadow-xs"
+                className="w-4 h-4 rounded-full border border-glass-border/80 shadow-sm flex-shrink-0"
                 style={{ background: productColor }}
-                title={productColor}
               />
-            </div>
+              <span className="text-2xs font-bold text-dark-300 hidden sm:block">Color</span>
+            </button>
 
-            <div className="h-4 w-px bg-glass-border hidden sm:block" />
+            <div className="h-4 w-px bg-glass-border hidden sm:block flex-shrink-0" />
 
             {/* Selected Fabric Badge */}
             <button
               onClick={() => setActiveTab('materials')}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-900/80 border border-glass-border hover:border-brand-500/40 text-2xs transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-dark-900/80 border border-glass-border hover:border-brand-500/40 text-2xs transition-all min-w-0"
               title="Change Fabric Material"
             >
-              <Feather className="w-3 h-3 text-brand-400" />
-              <span className="text-white font-bold truncate max-w-[120px] sm:max-w-none">{selectedMaterial.name}</span>
+              <Feather className="w-3 h-3 text-brand-400 flex-shrink-0" />
+              <span className="text-white font-bold truncate max-w-[80px] sm:max-w-[140px]">{selectedMaterial.name}</span>
               {selectedMaterial.priceAddon > 0 && (
-                <span className="text-brand-400 font-bold">+₹{selectedMaterial.priceAddon}</span>
+                <span className="text-brand-400 font-bold flex-shrink-0">+₹{selectedMaterial.priceAddon}</span>
               )}
             </button>
           </div>
 
           {/* Dynamic Checkout Button */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
             <button
               onClick={() => {
                 if (onCheckout) {
@@ -1422,10 +1501,10 @@ const QuickTemplateCustomizer = ({
                 }
               }}
               disabled={isSaving}
-              className="btn-primary !py-2.5 !px-6 text-xs font-black flex items-center gap-2 shadow-xl shadow-brand-500/25 transition-transform active:scale-95"
+              className="btn-primary !py-2 !px-4 sm:!px-6 text-xs font-black flex items-center gap-1.5 shadow-xl shadow-brand-500/25 transition-transform active:scale-95"
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Order Now • ₹{totalPrice}</span>
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Order Now • </span><span>₹{totalPrice}</span>
             </button>
           </div>
         </div>
