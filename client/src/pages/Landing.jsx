@@ -417,19 +417,6 @@ const Landing = () => {
 
         {/* ── Central content ── */}
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-20">
-          {/* Badge */}
-          <motion.div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-sm font-semibold text-brand-500"
-            style={{ background: 'rgba(199, 109, 74, 0.1)', border: '1px solid rgba(199, 109, 74, 0.25)' }}
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-          >
-            <span className="font-mono font-black text-base text-brand-500 tracking-tighter">(:</span>
-            <span>Crexza Studio • Realistic Apparel Templates</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </motion.div>
-
           {/* Headline */}
           <motion.h1
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight mb-4"
