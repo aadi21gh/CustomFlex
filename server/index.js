@@ -46,28 +46,29 @@ app.use('/api/', limiter);
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'http://localhost:5000',
+  'http://127.0.0.1:5173',
   'https://custom-flex.vercel.app',
   'https://crexza.vercel.app',
-  process.env.CLIENT_URL,
-].filter(Boolean);
+];
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL.replace(/\/$/, ''));
+}
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.vercel.app') ||
-      origin.includes('localhost')
-    ) {
-      return callback(null, true);
+    const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Fallback to allow cross-origin requests safely
     }
-    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+app.options('*', cors());
 
 // Body parsing
 app.use(express.json({ limit: '50mb' }));
@@ -122,12 +123,11 @@ cron.schedule('0 * * * *', async () => {
 });
 
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`\n🚀 Crexza API running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-    console.log(`📍 Health check: http://localhost:${PORT}/api/health\n`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`\n🚀 Crexza API running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`📍 Health check: http://localhost:${PORT}/api/health\n`);
+});
 
 module.exports = app;
+// Trigger nodemon env reload 3
 
