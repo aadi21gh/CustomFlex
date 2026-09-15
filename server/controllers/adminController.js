@@ -4,7 +4,8 @@ const Order = require('../models/Order');
 const Post = require('../models/Post');
 const Refund = require('../models/Refund');
 const RewardConfig = require('../models/RewardConfig');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { getRazorpayInstance } = require('../config/razorpay');
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 const Notification = require('../models/Notification');
 const { checkRefundEligibility } = require('../utils/refundChecker');
 
@@ -342,22 +343,42 @@ exports.processRefund = async (req, res, next) => {
     refund.reviewedBy = req.user.id;
     refund.reviewedAt = new Date();
 
-    if (status === 'approved' && refund.order?.stripePaymentIntentId) {
+    if (status === 'approved') {
       try {
-        // Issue Stripe refund (INR — amount in paise)
-        const stripeRefund = await stripe.refunds.create({
-          payment_intent: refund.order.stripePaymentIntentId,
-          amount: Math.round(refund.amount * 100), // paise
-        });
-        refund.stripeRefundId = stripeRefund.id;
-        refund.status = 'processed';
-        refund.processedAt = new Date();
-
-        // Update order status
-        await Order.findByIdAndUpdate(refund.order._id, { status: 'refunded' });
-      } catch (stripeError) {
-        console.error('Stripe reward error:', stripeError.message);
-        // Keep as 'approved' if Stripe fails — admin can retry
+        if (refund.order?.razorpayPaymentId) {
+          // Issue Razorpay refund (INR — amount in paise)
+          const razorpay = getRazorpayInstance();
+          const rzpRefund = await razorpay.payments.refund(refund.order.razorpayPaymentId, {
+            amount: Math.round(refund.amount * 100),
+            notes: {
+              rewardId: refund._id.toString(),
+              orderNumber: refund.order.orderNumber || '',
+              reason: 'Community Reward Program Eligibility Achieved',
+            },
+          });
+          refund.razorpayRefundId = rzpRefund.id;
+          refund.status = 'processed';
+          refund.processedAt = new Date();
+          await Order.findByIdAndUpdate(refund.order._id, { status: 'refunded' });
+        } else if (refund.order?.stripePaymentIntentId && stripe) {
+          // Legacy Stripe refund fallback
+          const stripeRefund = await stripe.refunds.create({
+            payment_intent: refund.order.stripePaymentIntentId,
+            amount: Math.round(refund.amount * 100),
+          });
+          refund.stripeRefundId = stripeRefund.id;
+          refund.status = 'processed';
+          refund.processedAt = new Date();
+          await Order.findByIdAndUpdate(refund.order._id, { status: 'refunded' });
+        } else {
+          // Manual or offline payment approval
+          refund.status = 'processed';
+          refund.processedAt = new Date();
+          await Order.findByIdAndUpdate(refund.order._id, { status: 'refunded' });
+        }
+      } catch (refundError) {
+        console.error('Payment gateway reward/refund error:', refundError.message);
+        // Keep as 'approved' if gateway call fails — admin can retry
         refund.status = 'approved';
       }
     }

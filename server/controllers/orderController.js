@@ -1,4 +1,5 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const crypto = require('crypto');
+const { getRazorpayInstance } = require('../config/razorpay');
 const Order = require('../models/Order');
 const Design = require('../models/Design');
 const Product = require('../models/Product');
@@ -51,15 +52,23 @@ exports.calculateOrderPrice = async (req, res, next) => {
   }
 };
 
-// @desc    Create Stripe checkout session
-// @route   POST /api/orders/create-checkout-session
+// @desc    Create Razorpay Order
+// @route   POST /api/orders/create-razorpay-order (and /create-checkout-session)
 // @access  Private
-exports.createCheckoutSession = async (req, res, next) => {
+exports.createRazorpayOrder = async (req, res, next) => {
   try {
     const {
       designId, productId, quantity, material, printArea,
       size, color, deliveryMethod, shippingAddress, couponCode,
+      termsAccepted,
     } = req.body;
+
+    if (!termsAccepted) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must accept the custom on-demand manufacturing and all-sales-final terms to proceed.',
+      });
+    }
 
     const design = await Design.findById(designId);
     if (!design) return res.status(404).json({ success: false, message: 'Design not found' });
@@ -80,7 +89,7 @@ exports.createCheckoutSession = async (req, res, next) => {
       couponCode,
     });
 
-    // Create pending order record
+    // Create pending order record in MongoDB
     const order = await Order.create({
       user: req.user.id,
       design: designId,
@@ -93,9 +102,9 @@ exports.createCheckoutSession = async (req, res, next) => {
       pricing: {
         basePrice: pricing.basePrice,
         originalBasePrice: pricing.basePrice,
-        materialModifier: pricing.materialPrice,    // repurposed field: stores addOn amount
-        printAreaModifier: pricing.designCharge,    // repurposed field: stores design charge
-        aiComplexityFee: 0,                         // no longer used — always 0
+        materialModifier: pricing.materialPrice,    // stores addOn amount
+        printAreaModifier: pricing.designCharge,    // stores design charge
+        aiComplexityFee: 0,
         subtotal: pricing.itemsTotal,
         tax: 0,
         shipping: pricing.deliveryCharge,
@@ -104,6 +113,8 @@ exports.createCheckoutSession = async (req, res, next) => {
         couponDiscount: pricing.couponDiscount,
       },
       shippingAddress,
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
       designSnapshot: design.thumbnail?.url,
     });
 
@@ -130,56 +141,53 @@ exports.createCheckoutSession = async (req, res, next) => {
         success: true,
         isFree: true,
         orderId: order._id,
-        successUrl: `${process.env.CLIENT_URL}/dashboard/orders?success=true&orderId=${order._id}`,
+        orderNumber: order.orderNumber,
       });
     }
 
-    // Create Stripe checkout session (INR)
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      customer_email: req.user.email,
-      metadata: {
+    // Initialize Razorpay Order (INR — amount in paise)
+    const razorpay = getRazorpayInstance();
+    const razorpayAmount = Math.round(pricing.total * 100);
+
+    const razorpayOrder = await razorpay.orders.create({
+      amount: razorpayAmount,
+      currency: 'INR',
+      receipt: order.orderNumber || `order_${order._id}`,
+      notes: {
         orderId: order._id.toString(),
         userId: req.user.id.toString(),
+        orderNumber: order.orderNumber || '',
+        isCustomItem: 'true',
+        policy: 'All Sales Final - Custom Manufactured On-Demand',
       },
-      line_items: [
-        {
-          price_data: {
-            currency: 'inr',
-            product_data: {
-              name: `${design.title} — ${product.name}`,
-              description: [
-                `Material: ${pricing.materialLabel}`,
-                `Print Area: ${pricing.printAreaLabel}`,
-                `Qty: ${quantity}`,
-                `Delivery: ${pricing.deliveryLabel}`,
-              ].join(' | '),
-              images: design.thumbnail?.url ? [design.thumbnail.url] : [],
-            },
-            // Stripe uses smallest currency unit — paise for INR
-            unit_amount: Math.round(pricing.total * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.CLIENT_URL}/dashboard/orders?success=true&orderId=${order._id}`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout?cancelled=true`,
     });
 
-    order.stripeSessionId = session.id;
+    order.razorpayOrderId = razorpayOrder.id;
     await order.save();
 
     res.status(200).json({
       success: true,
-      sessionId: session.id,
-      sessionUrl: session.url,
       orderId: order._id,
+      orderNumber: order.orderNumber,
+      razorpayOrderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+      productName: `${design.title} — ${product.name}`,
+      productDescription: `${pricing.materialLabel} | ${pricing.printAreaLabel} | Qty: ${quantity}`,
+      user: {
+        name: req.user.name || shippingAddress?.fullName,
+        email: req.user.email,
+        phone: shippingAddress?.phone || '',
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
+// Aliased for backward compatibility
+exports.createCheckoutSession = exports.createRazorpayOrder;
 
 // @desc    Get user orders
 // @route   GET /api/orders/my-orders
@@ -236,39 +244,87 @@ exports.getOrder = async (req, res, next) => {
   }
 };
 
-// @desc    Confirm payment (called after successful Stripe payment)
+// @desc    Verify Razorpay payment signature & confirm order
+// @route   POST /api/orders/verify-payment
+// @access  Private
+exports.verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required Razorpay payment verification fields.',
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (order.user.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    // Verify HMAC-SHA256 signature
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret';
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body)
+      .digest('hex');
+
+    const isAuthentic = expectedSignature === razorpay_signature;
+
+    if (!isAuthentic) {
+      console.error('❌ Razorpay signature mismatch for order:', order.orderNumber);
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed: Signature mismatch.',
+      });
+    }
+
+    // Update order status if not already paid
+    if (!order.isPaid) {
+      order.isPaid = true;
+      order.paidAt = new Date();
+      order.status = 'paid';
+      order.razorpayOrderId = razorpay_order_id;
+      order.razorpayPaymentId = razorpay_payment_id;
+      order.razorpaySignature = razorpay_signature;
+      await order.save();
+
+      // Increment design purchase count
+      await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
+
+      // In-app notification
+      await Notification.create({
+        recipient: req.user.id,
+        type: 'order_placed',
+        message: `Your order ${order.orderNumber} has been verified and confirmed! 🎉`,
+        link: `/dashboard/orders`,
+        meta: { orderId: order._id },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully',
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Confirm payment fallback
 // @route   POST /api/orders/:id/confirm-payment
 // @access  Private
 exports.confirmPayment = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    if (order.user.toString() !== req.user.id) {
+    if (order.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
-    }
-
-    // Verify session status with Stripe
-    if (order.stripeSessionId) {
-      const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
-      if (session.payment_status === 'paid') {
-        order.isPaid = true;
-        order.paidAt = new Date();
-        order.status = 'paid';
-        order.stripePaymentIntentId = session.payment_intent;
-        await order.save();
-
-        // Increment design purchase count
-        await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
-
-        // In-app notification
-        await Notification.create({
-          recipient: req.user.id,
-          type: 'order_placed',
-          message: `Your order ${order.orderNumber} has been confirmed! 🎉`,
-          link: `/dashboard/orders`,
-          meta: { orderId: order._id },
-        });
-      }
     }
 
     res.status(200).json({ success: true, order });

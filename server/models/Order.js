@@ -60,6 +60,9 @@ const orderSchema = new mongoose.Schema(
     },
     stripePaymentIntentId: String,
     stripeSessionId: String,
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpaySignature: String,
     isPaid: { type: Boolean, default: false },
     paidAt: Date,
     isDelivered: { type: Boolean, default: false },
@@ -68,6 +71,9 @@ const orderSchema = new mongoose.Schema(
     refundEligible: { type: Boolean, default: false },
     refundEligibleAt: Date,
     notes: String,
+    // Digital terms of service consent for dispute defense
+    termsAccepted: { type: Boolean, default: false },
+    termsAcceptedAt: Date,
     // Snapshot of design thumbnail at time of order
     designSnapshot: String,
   },

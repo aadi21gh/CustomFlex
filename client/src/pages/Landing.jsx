@@ -321,7 +321,7 @@ const Landing = () => {
     { icon: ShoppingBag, title: 'Order Custom Products', description: 'Turn your designs into real products. Transparent pricing based on materials, size, and delivery.', gradient: 'bg-gradient-to-br from-brand-500 to-purple-500', delay: 1 },
     { icon: Share2, title: 'Share & Earn Rewards', description: 'Post your purchases to the community. When your design goes viral, earn rewards automatically.', gradient: 'bg-gradient-to-br from-brand-700 to-brand-500', delay: 2 },
     { icon: Zap, title: 'Lightning Fast', description: 'Optimized studio with instant previews, autosave, and smooth 60fps animations throughout.', gradient: 'bg-gradient-to-br from-brand-500 to-dark-600', delay: 3 },
-    { icon: Shield, title: 'Secure Payments', description: 'Stripe-powered checkout with bank-grade security. Your financial data is always protected.', gradient: 'bg-gradient-to-br from-brand-600 to-brand-800', delay: 4 },
+    { icon: Shield, title: 'Secure Payments', description: 'Razorpay-powered checkout with UPI, Google Pay, PhonePe, Cards, and NetBanking.', gradient: 'bg-gradient-to-br from-brand-600 to-brand-800', delay: 4 },
     { icon: Users, title: 'Vibrant Community', description: 'Follow creators, like posts, leave comments, and discover trending designs every day.', gradient: 'bg-gradient-to-br from-brand-600 to-purple-500', delay: 5 },
   ];
 
@@ -334,7 +334,7 @@ const Landing = () => {
 
   const howItWorks = [
     { step: '01', title: 'Design', description: 'Open the studio and create your custom product using our professional editing tools.', icon: Palette },
-    { step: '02', title: 'Order', description: 'Select your product specs, review transparent pricing, and checkout securely via Stripe.', icon: ShoppingBag },
+    { step: '02', title: 'Order', description: 'Select your product specs, review transparent pricing, and checkout securely via Razorpay & UPI.', icon: ShoppingBag },
     { step: '03', title: 'Share', description: 'Upload a photo of your product to the community feed and start getting engagement.', icon: Share2 },
     { step: '04', title: 'Earn', description: 'Once your post hits the engagement threshold, get your full purchase price rewarded.', icon: TrendingUp },
   ];

@@ -19,14 +19,37 @@ const checkRefundEligibility = async () => {
 
     // Load live config from DB (creates default if missing)
     const config = await RewardConfig.getSingleton();
-    const { likesMode, fixedLikesThreshold, minUniquePurchasers, rewardPercentage, sendEligibleEmail } = config;
+    const {
+      likesMode,
+      fixedLikesThreshold,
+      minUniquePurchasers,
+      rewardPercentage,
+      sendEligibleEmail,
+      payoutDelayDays = 7,
+      requireDeliveredStatus = true,
+      blockSameAddressOrPhone = true,
+    } = config;
 
-    // All paid, non-rewarded, non-cancelled orders with public posts
-    const orders = await Order.find({
+    // Buffer timestamp: orders must have completed delivery before this timestamp
+    const disputeBufferTime = new Date(Date.now() - (payoutDelayDays * 24 * 60 * 60 * 1000));
+
+    // Base query for original orders eligible to receive rewards
+    const orderQuery = {
       isPaid: true,
       refundEligible: false,
-      status: { $in: ['paid', 'processing', 'shipped', 'delivered'] },
-    }).populate('user', 'name email');
+      status: requireDeliveredStatus
+        ? 'delivered'
+        : { $in: ['paid', 'processing', 'shipped', 'delivered'] },
+    };
+
+    if (requireDeliveredStatus && payoutDelayDays > 0) {
+      orderQuery.$or = [
+        { deliveredAt: { $lte: disputeBufferTime } },
+        { updatedAt: { $lte: disputeBufferTime }, status: 'delivered' },
+      ];
+    }
+
+    const orders = await Order.find(orderQuery).populate('user', 'name email');
 
     let eligibleCount = 0;
 
@@ -41,17 +64,61 @@ const checkRefundEligibility = async () => {
         : fixedLikesThreshold;
 
       const likesCondition = post.likesCount >= likesRequired;
+      if (!likesCondition) continue;
 
-      /* ── Condition 2: Unique purchasers of same design ────────────────── */
-      const otherPurchasers = await Order.distinct('user', {
+      /* ── Condition 2: Anti-Fraud & Verified Referred Purchasers ────────── */
+      // Query other orders for the exact same design
+      const referredQuery = {
         design: order.design,
         isPaid: true,
         _id: { $ne: order._id },
-      });
-      // minUniquePurchasers includes the original buyer, so others needed = minUniquePurchasers - 1
-      const purchasersCondition = otherPurchasers.length >= (minUniquePurchasers - 1);
+        user: { $ne: order.user._id },
+        status: requireDeliveredStatus
+          ? 'delivered'
+          : { $nin: ['cancelled', 'refunded'] },
+      };
 
-      if (!likesCondition || !purchasersCondition) continue;
+      if (requireDeliveredStatus && payoutDelayDays > 0) {
+        referredQuery.$or = [
+          { deliveredAt: { $lte: disputeBufferTime } },
+          { updatedAt: { $lte: disputeBufferTime }, status: 'delivered' },
+        ];
+      }
+
+      const rawReferredOrders = await Order.find(referredQuery);
+
+      // Anti-collusion deduplication
+      const validReferredBuyers = new Set();
+      const normalizeStr = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      const originalPhone = normalizeStr(order.shippingAddress?.phone);
+      const originalAddress = normalizeStr(order.shippingAddress?.address);
+      const originalPostal = normalizeStr(order.shippingAddress?.postalCode);
+
+      for (const refOrder of rawReferredOrders) {
+        const refUserId = refOrder.user.toString();
+
+        if (blockSameAddressOrPhone) {
+          const refPhone = normalizeStr(refOrder.shippingAddress?.phone);
+          const refAddress = normalizeStr(refOrder.shippingAddress?.address);
+          const refPostal = normalizeStr(refOrder.shippingAddress?.postalCode);
+
+          // Check if phone or exact address matches original buyer (self-referral / collusion)
+          const isPhoneMatch = originalPhone && refPhone && originalPhone === refPhone;
+          const isAddressMatch = originalAddress && refAddress && originalPostal === refPostal && originalAddress === refAddress;
+
+          if (isPhoneMatch || isAddressMatch) {
+            console.log(`⚠️ Anti-fraud: Disqualified collusion order ${refOrder.orderNumber} for design ${order.design}`);
+            continue;
+          }
+        }
+
+        validReferredBuyers.add(refUserId);
+      }
+
+      // minUniquePurchasers includes original buyer, so others needed = minUniquePurchasers - 1
+      const purchasersCondition = validReferredBuyers.size >= (minUniquePurchasers - 1);
+      if (!purchasersCondition) continue;
 
       /* ── Mark order as reward eligible ───────────────────────────────── */
       order.refundEligible = true;

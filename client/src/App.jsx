@@ -17,6 +17,7 @@ import Profile from '@/pages/Profile';
 import CategorySelect from '@/pages/CategorySelect';
 import Studio from '@/pages/Studio';
 import Checkout from '@/pages/Checkout';
+import PhygitalVerify from '@/pages/PhygitalVerify';
 import NotFound from '@/pages/NotFound';
 
 // Dashboard
@@ -42,6 +43,8 @@ const App = () => {
           <Route path="/explore" element={<Explore />} />
           <Route path="/explore/post/:id" element={<PostDetail />} />
           <Route path="/profile/:id" element={<Profile />} />
+          <Route path="/verify/:tagId" element={<PhygitalVerify />} />
+          <Route path="/phygital/:designId" element={<PhygitalVerify />} />
 
           {/* Auth Routes */}
           <Route path="/auth/login" element={<Login />} />

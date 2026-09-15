@@ -1,59 +1,113 @@
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const Order = require('../models/Order');
 const Design = require('../models/Design');
 const Notification = require('../models/Notification');
 
 router.post('/', async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
+  const rzpSignature = req.headers['x-razorpay-signature'];
+  const stripeSignature = req.headers['stripe-signature'];
 
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
+  // 1. Handle Razorpay Webhook
+  if (rzpSignature) {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    const rawBody = req.body ? req.body.toString('utf8') : '';
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object;
-      if (session.payment_status === 'paid') {
-        const order = await Order.findOne({ stripeSessionId: session.id });
-        if (order && !order.isPaid) {
-          order.isPaid = true;
-          order.paidAt = new Date();
-          order.status = 'paid';
-          order.stripePaymentIntentId = session.payment_intent;
-          await order.save();
+    if (webhookSecret) {
+      try {
+        const isValid = Razorpay.validateWebhookSignature(rawBody, rzpSignature, webhookSecret);
+        if (!isValid) {
+          console.error('❌ Razorpay webhook signature verification failed.');
+          return res.status(400).json({ success: false, message: 'Invalid signature' });
+        }
+      } catch (err) {
+        console.error('❌ Razorpay webhook error:', err.message);
+        return res.status(400).json({ success: false, message: err.message });
+      }
+    }
 
-          // Increment design purchase count
-          await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
+    try {
+      const payload = typeof req.body === 'string' ? JSON.parse(req.body) : JSON.parse(rawBody);
+      const event = payload.event;
+      const paymentEntity = payload.payload?.payment?.entity;
+      const orderEntity = payload.payload?.order?.entity;
 
-          // Notify user
-          await Notification.create({
-            recipient: order.user,
-            type: 'order_placed',
-            message: `✅ Your order ${order.orderNumber} has been confirmed and is being processed!`,
-            link: '/dashboard/orders',
-            meta: { orderId: order._id },
-          });
+      if (event === 'payment.captured' || event === 'order.paid') {
+        const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id;
+        const razorpayPaymentId = paymentEntity?.id;
+
+        if (razorpayOrderId) {
+          const order = await Order.findOne({ razorpayOrderId });
+          if (order && !order.isPaid) {
+            order.isPaid = true;
+            order.paidAt = new Date();
+            order.status = 'paid';
+            if (razorpayPaymentId) order.razorpayPaymentId = razorpayPaymentId;
+            await order.save();
+
+            // Increment design purchase count
+            await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
+
+            // Notify user
+            await Notification.create({
+              recipient: order.user,
+              type: 'order_placed',
+              message: `✅ Your order ${order.orderNumber} has been confirmed and is being processed!`,
+              link: '/dashboard/orders',
+              meta: { orderId: order._id },
+            });
+          }
+        }
+      } else if (event === 'payment.failed') {
+        const razorpayOrderId = paymentEntity?.order_id;
+        if (razorpayOrderId) {
+          const order = await Order.findOne({ razorpayOrderId });
+          if (order && !order.isPaid) {
+            order.status = 'cancelled';
+            await order.save();
+          }
         }
       }
-      break;
+
+      return res.status(200).json({ status: 'ok' });
+    } catch (parseErr) {
+      console.error('Razorpay payload parse error:', parseErr.message);
+      return res.status(400).json({ success: false, message: 'Invalid JSON payload' });
     }
-    case 'payment_intent.payment_failed': {
-      const paymentIntent = event.data.object;
-      const order = await Order.findOne({ stripePaymentIntentId: paymentIntent.id });
-      if (order) {
-        order.status = 'cancelled';
-        await order.save();
+  }
+
+  // 2. Fallback Legacy Stripe Webhook
+  if (stripeSignature && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const event = stripe.webhooks.constructEvent(req.body, stripeSignature, process.env.STRIPE_WEBHOOK_SECRET);
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        if (session.payment_status === 'paid') {
+          const order = await Order.findOne({ stripeSessionId: session.id });
+          if (order && !order.isPaid) {
+            order.isPaid = true;
+            order.paidAt = new Date();
+            order.status = 'paid';
+            order.stripePaymentIntentId = session.payment_intent;
+            await order.save();
+            await Design.findByIdAndUpdate(order.design, { $inc: { purchaseCount: 1 } });
+            await Notification.create({
+              recipient: order.user,
+              type: 'order_placed',
+              message: `✅ Your order ${order.orderNumber} has been confirmed!`,
+              link: '/dashboard/orders',
+              meta: { orderId: order._id },
+            });
+          }
+        }
       }
-      break;
+    } catch (err) {
+      console.error(`Legacy stripe webhook failed: ${err.message}`);
     }
-    default:
-      console.log(`Unhandled webhook event: ${event.type}`);
   }
 
   res.status(200).json({ received: true });

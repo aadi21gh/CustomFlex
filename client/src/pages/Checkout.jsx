@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, Package, Truck, CreditCard, ArrowRight, ArrowLeft,
   CheckCircle2, Loader2, Info, ChevronDown, ChevronUp,
-  Minus, Plus, Tag, Box, Palette, Star,
+  Minus, Plus, Tag, Box, Palette, Star, ShieldCheck, ShieldAlert,
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import api from '@/lib/axios';
 import { formatPrice } from '@/lib/utils';
+import { loadRazorpayScript } from '@/lib/razorpay';
 import toast from 'react-hot-toast';
 
 /* ─── Static delivery options (mirrors backend) ─────────────────────────────── */
@@ -277,6 +278,7 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [couponError, setCouponError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Load design
   useEffect(() => {
@@ -384,10 +386,21 @@ const Checkout = () => {
     if (!address.fullName || !address.address || !address.city || !address.postalCode) {
       toast.error('Please fill in all required address fields'); return;
     }
+    if (!termsAccepted) {
+      toast.error('Please confirm and accept the custom on-demand item terms to proceed.'); return;
+    }
 
     setIsCheckingOut(true);
     try {
-      const { data } = await api.post('/orders/create-checkout-session', {
+      // Ensure Razorpay SDK is loaded
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast.error('Could not load Razorpay gateway. Please check your network connection.');
+        setIsCheckingOut(false);
+        return;
+      }
+
+      const { data } = await api.post('/orders/create-razorpay-order', {
         designId,
         productId: selectedProduct._id,
         quantity: options.quantity,
@@ -398,16 +411,73 @@ const Checkout = () => {
         deliveryMethod: options.deliveryMethod,
         shippingAddress: address,
         couponCode: appliedCoupon,
+        termsAccepted: true,
       });
+
       if (data.isFree) {
         toast.success('Order placed successfully! 🎉');
         navigate(`/dashboard/orders?success=true&orderId=${data.orderId}`);
-      } else if (data.sessionUrl) {
-        window.location.href = data.sessionUrl;
+        return;
+      }
+
+      if (data.razorpayOrderId) {
+        const rzpOptions = {
+          key: data.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: data.amount,
+          currency: data.currency || 'INR',
+          name: 'Crexza',
+          description: data.productName || 'Custom On-Demand Product',
+          image: design?.thumbnail?.url || '/favicon.ico',
+          order_id: data.razorpayOrderId,
+          handler: async function (response) {
+            try {
+              setIsCheckingOut(true);
+              const verifyRes = await api.post('/orders/verify-payment', {
+                orderId: data.orderId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+
+              if (verifyRes.data.success) {
+                toast.success('Payment verified! Order placed successfully! 🎉');
+                navigate(`/dashboard/orders?success=true&orderId=${data.orderId}`);
+              }
+            } catch (verifyErr) {
+              toast.error(verifyErr?.response?.data?.message || 'Payment verification failed. Please contact support.');
+            } finally {
+              setIsCheckingOut(false);
+            }
+          },
+          prefill: {
+            name: data.user?.name || address.fullName,
+            email: data.user?.email || '',
+            contact: data.user?.phone || address.phone || '',
+          },
+          notes: {
+            orderId: data.orderId,
+            orderNumber: data.orderNumber,
+          },
+          theme: {
+            color: '#6366f1',
+          },
+          modal: {
+            ondismiss: function () {
+              setIsCheckingOut(false);
+              toast('Payment cancelled or checkout window closed', { icon: 'ℹ️' });
+            },
+          },
+        };
+
+        const rzpInstance = new window.Razorpay(rzpOptions);
+        rzpInstance.on('payment.failed', function (resp) {
+          toast.error(resp?.error?.description || 'Payment transaction failed');
+          setIsCheckingOut(false);
+        });
+        rzpInstance.open();
       }
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Checkout failed');
-    } finally {
       setIsCheckingOut(false);
     }
   };
@@ -728,12 +798,33 @@ const Checkout = () => {
                 )}
               </div>
 
+              {/* All Sales Final & Custom Item Consent */}
+              <div className="mt-5 p-3.5 rounded-xl border border-glass-border/80 bg-dark-900/70 space-y-2.5">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-glass-border bg-dark-800 text-brand-500 focus:ring-brand-500 focus:ring-offset-0 transition-colors cursor-pointer"
+                    id="terms-agreement-checkbox"
+                  />
+                  <span className="text-xs text-dark-300 leading-relaxed">
+                    I understand this is a <strong className="text-white">custom made-to-order item</strong> printed specifically for me. <strong className="text-white">All sales are final</strong> once production begins.
+                  </span>
+                </label>
+
+                <div className="flex items-center gap-2 pt-1 border-t border-glass-border/40 text-[11px] text-emerald-400 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Free reprint/replacement for verified transit damage or print defects within 48 hrs.</span>
+                </div>
+              </div>
+
               <Button
                 onClick={handleCheckout}
-                disabled={!pricing || isCheckingOut || !selectedProduct}
+                disabled={!pricing || isCheckingOut || !selectedProduct || !termsAccepted}
                 isLoading={isCheckingOut}
                 variant="primary"
-                className="w-full mt-5 !py-4"
+                className="w-full mt-5 !py-4 shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 id="checkout-pay-btn"
               >
                 <CreditCard className="w-5 h-5" />
@@ -743,7 +834,7 @@ const Checkout = () => {
 
               <div className="flex items-center justify-center gap-2 mt-3 text-xs text-dark-500">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                Secured by Stripe · SSL encrypted
+                Secured by Razorpay · UPI, Cards, NetBanking · Made to Order
               </div>
             </motion.div>
 

@@ -6,7 +6,8 @@ import {
   Save, Undo2, Redo2, ZoomIn, ZoomOut, Grid3X3, Eye, EyeOff,
   Download, ArrowLeft, Loader2, ShoppingCart, Palette, Settings,
   Check, Cloud, CloudLightning, Layers, Sliders, Type, Shapes,
-  Smile, Upload, Wand2, Shirt, Sparkles, X, RotateCcw
+  Smile, Upload, Wand2, Shirt, Sparkles, X, RotateCcw,
+  Camera, Scan, ShieldCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StudioProvider, useStudio } from '@/context/StudioContext';
@@ -20,6 +21,9 @@ import ProductFabricPanel from '@/components/studio/ProductFabricPanel';
 import LayersPanel from '@/components/studio/LayersPanel';
 import PropertiesPanel from '@/components/studio/PropertiesPanel';
 import ProductPreview from '@/components/studio/ProductPreview';
+import AIModelPhotoshootModal from '@/components/studio/AIModelPhotoshootModal';
+import WebARTryOnModal from '@/components/studio/WebARTryOnModal';
+import PhygitalCertificateModal from '@/components/studio/PhygitalCertificateModal';
 import api from '@/lib/axios';
 
 // Clipboard state helper
@@ -42,6 +46,9 @@ const StudioContent = ({ category, designId: editId }) => {
 
   const [activeTab, setActiveTab] = useState('text'); // 'text' | 'shapes' | 'stickers' | 'upload' | 'ai' | 'product' | 'layers'
   const [showPreview, setShowPreview] = useState(false);
+  const [showPhotoshoot, setShowPhotoshoot] = useState(false);
+  const [showARTryOn, setShowARTryOn] = useState(false);
+  const [showPhygital, setShowPhygital] = useState(false);
   const [isLoadingDesign, setIsLoadingDesign] = useState(false);
   const [showRightInspector, setShowRightInspector] = useState(true);
   const [saveStatus, setSaveStatus] = useState('saved');
@@ -411,7 +418,37 @@ const StudioContent = ({ category, designId: editId }) => {
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* AI Virtual Photoshoot */}
+          <button
+            onClick={() => setShowPhotoshoot(true)}
+            className="px-2.5 py-1.5 rounded-xl border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/20 text-xs font-semibold text-brand-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm"
+            title="Generate 4K AI Model Photoshoot"
+          >
+            <Camera className="w-3.5 h-3.5 text-brand-400" />
+            <span className="hidden sm:inline">AI Photoshoot</span>
+          </button>
+
+          {/* WebAR Live Try-on */}
+          <button
+            onClick={() => setShowARTryOn(true)}
+            className="px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-semibold text-cyan-300 hover:text-white flex items-center gap-1.5 transition-all hidden md:flex shadow-sm"
+            title="Live WebAR Virtual Try-On Mirror"
+          >
+            <Scan className="w-3.5 h-3.5 text-cyan-400" />
+            <span>AR Try-On</span>
+          </button>
+
+          {/* Phygital Smart NFC / Tag */}
+          <button
+            onClick={() => setShowPhygital(true)}
+            className="px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 hover:text-white flex items-center gap-1.5 transition-all hidden lg:flex shadow-sm"
+            title="Generate NFC Smart Care Tag & Certificate"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <span>Phygital Tag</span>
+          </button>
+
           <button
             onClick={() => setShowPreview(true)}
             className="px-2.5 py-1.5 rounded-xl border border-glass-border hover:border-brand-500/40 bg-dark-900/40 hover:bg-dark-900 text-xs font-semibold text-dark-300 hover:text-white flex items-center gap-1.5 transition-all hidden sm:flex"
@@ -550,6 +587,25 @@ const StudioContent = ({ category, designId: editId }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Upgrade 2: AI Virtual Model Photoshoot Modal */}
+      <AIModelPhotoshootModal
+        isOpen={showPhotoshoot}
+        onClose={() => setShowPhotoshoot(false)}
+      />
+
+      {/* Upgrade 3: WebAR Live Camera Mirror Virtual Try-On Modal */}
+      <WebARTryOnModal
+        isOpen={showARTryOn}
+        onClose={() => setShowARTryOn(false)}
+      />
+
+      {/* Upgrade 3: Phygital Smart NFC/QR Tag & Certificate Modal */}
+      <PhygitalCertificateModal
+        isOpen={showPhygital}
+        onClose={() => setShowPhygital(false)}
+        designId={editId || 'crx-8891'}
+      />
 
       {/* Loading Overlay */}
       {isLoadingDesign && (

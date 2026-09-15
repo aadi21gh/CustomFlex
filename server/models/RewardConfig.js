@@ -35,6 +35,24 @@ const rewardConfigSchema = new mongoose.Schema(
       min: 2,
     },
 
+    /* ── Anti-Fraud & Holding Protections ────────────────────────────────── */
+    // Days to wait after delivery before reward eligibility unlocks (chargeback buffer)
+    payoutDelayDays: {
+      type: Number,
+      default: 7,
+      min: 0,
+    },
+    // Require all qualifying orders to have 'delivered' status
+    requireDeliveredStatus: {
+      type: Boolean,
+      default: true,
+    },
+    // Block orders sharing same shipping address or phone from counting towards reward
+    blockSameAddressOrPhone: {
+      type: Boolean,
+      default: true,
+    },
+
     /* ── Reward Amount ───────────────────────────────────────────────────── */
     // Percentage of order total to reward (100 = full refund)
     rewardPercentage: {

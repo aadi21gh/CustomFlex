@@ -212,6 +212,14 @@ const GEOMETRY_FACTORY = {
   cap: createCapGeometry,
 };
 
+const PRINT_FINISHES = [
+  { id: 'screen', label: 'Screen Print', icon: '🎨', desc: 'Matte Standard', roughness: 0.65, metalness: 0.05, emissive: 0x000000, bumpScale: 0.01 },
+  { id: 'puff', label: '3D Puff Print', icon: '☁️', desc: 'Tactile Raised Foam', roughness: 0.95, metalness: 0.0, emissive: 0x000000, bumpScale: 0.08 },
+  { id: 'foil', label: 'Metallic Foil', icon: '✨', desc: 'Gold/Silver Specular', roughness: 0.15, metalness: 0.92, emissive: 0x221505, bumpScale: 0.02 },
+  { id: 'embroidery', label: 'Embroidery', icon: '🧵', desc: 'Woven Thread Luster', roughness: 0.5, metalness: 0.25, emissive: 0x000000, bumpScale: 0.05 },
+  { id: 'glow', label: 'Cyber Glow', icon: '⚡', desc: 'Neon Emissive', roughness: 0.35, metalness: 0.1, emissive: 0x06b6d4, bumpScale: 0.01 },
+];
+
 const Product3DViewer = () => {
   const containerRef = useRef(null);
   const {
@@ -226,6 +234,7 @@ const Product3DViewer = () => {
   const [cameraAngle, setCameraAngle] = useState('iso');
   const [windStrength, setWindStrength] = useState(0);
   const [showStats, setShowStats] = useState(true);
+  const [printFinish, setPrintFinish] = useState('screen');
 
   const sceneRef = useRef(null);
   const controlsRef = useRef(null);
@@ -417,12 +426,15 @@ const Product3DViewer = () => {
       textureRef.current = texture;
     }
 
-    // Physical Material with tactile sheen
+    // Physical Material with tactile sheen & luxury finish shaders
+    const activeFinish = PRINT_FINISHES.find((f) => f.id === printFinish) || PRINT_FINISHES[0];
     const mat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(productColor),
       map: texture || null,
-      roughness: 0.65,
-      metalness: 0.05,
+      roughness: activeFinish.roughness,
+      metalness: activeFinish.metalness,
+      emissive: new THREE.Color(activeFinish.emissive),
+      emissiveIntensity: activeFinish.id === 'glow' ? 0.6 : 0.05,
       side: THREE.DoubleSide,
     });
     materialRef.current = mat;
@@ -433,7 +445,7 @@ const Product3DViewer = () => {
     meshRef.current = mesh;
 
     sceneRef.current.add(mesh);
-  }, [productType, productColor, fabricRef]);
+  }, [productType, productColor, fabricRef, printFinish]);
 
   // Sync canvas edits to 3D texture in real-time
   useEffect(() => {
@@ -609,6 +621,28 @@ const Product3DViewer = () => {
             >
               <span>{emoji}</span>
               <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 3D Print Finish Shaders Switcher */}
+        <div className="flex items-center gap-1 p-0.5 rounded-xl bg-dark-900/90 backdrop-blur-md border border-amber-500/30 overflow-x-auto scrollbar-none shadow-lg shadow-black/40">
+          <span className="text-3xs font-bold text-amber-400 px-2 uppercase tracking-wider hidden md:inline">
+            Finish:
+          </span>
+          {PRINT_FINISHES.map((finish) => (
+            <button
+              key={finish.id}
+              onClick={() => setPrintFinish(finish.id)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-2xs font-semibold whitespace-nowrap transition-all ${
+                printFinish === finish.id
+                  ? 'bg-amber-500 text-black font-bold shadow-sm'
+                  : 'text-dark-300 hover:text-amber-300 hover:bg-amber-500/10'
+              }`}
+              title={`${finish.label} (${finish.desc})`}
+            >
+              <span>{finish.icon}</span>
+              <span className="hidden lg:inline">{finish.label}</span>
             </button>
           ))}
         </div>

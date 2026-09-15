@@ -42,6 +42,7 @@ const refundSchema = new mongoose.Schema(
     },
     reviewedAt: Date,
     stripeRefundId: String,
+    razorpayRefundId: String,
     processedAt: Date,
   },
   { timestamps: true }

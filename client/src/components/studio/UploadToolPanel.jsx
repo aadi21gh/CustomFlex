@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import { useStudio } from '@/context/StudioContext';
-import { Upload, Image as ImageIcon, Trash2, Check, Sparkles } from 'lucide-react';
+import { Upload, Image as ImageIcon, Trash2, Check, Sparkles, Wand2, Scissors, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SAMPLE_DECALS = [
@@ -23,11 +23,74 @@ const SAMPLE_DECALS = [
   },
 ];
 
+/* ── Smart 1-Click Background Remover (Client-side Alpha Isolator) ── */
+const removeImageBackground = (imgUrl) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+
+      // Sample 4 corners to detect background color
+      const corners = [
+        [0, 0],
+        [canvas.width - 1, 0],
+        [0, canvas.height - 1],
+        [canvas.width - 1, canvas.height - 1],
+      ];
+      let bgR = 0, bgG = 0, bgB = 0;
+      corners.forEach(([x, y]) => {
+        const idx = (y * canvas.width + x) * 4;
+        bgR += data[idx];
+        bgG += data[idx + 1];
+        bgB += data[idx + 2];
+      });
+      bgR = bgR / 4;
+      bgG = bgG / 4;
+      bgB = bgB / 4;
+
+      const tolerance = 45;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        const dist = Math.sqrt(
+          (r - bgR) ** 2 +
+          (g - bgG) ** 2 +
+          (b - bgB) ** 2
+        );
+
+        if (dist < tolerance) {
+          data[i + 3] = 0; // Transparent
+        } else if (dist < tolerance + 25) {
+          // Soft anti-aliased edge feathering
+          data[i + 3] = ((dist - tolerance) / 25) * 255;
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = imgUrl;
+  });
+};
+
 const UploadToolPanel = () => {
   const { fabricRef, addCanvasObject, activeSide } = useStudio();
   const fileInputRef = useRef(null);
   const [recentUploads, setRecentUploads] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessingBg, setIsProcessingBg] = useState(false);
 
   const addImageToCanvas = (dataUrl, name = 'Uploaded Graphic') => {
     fabric.Image.fromURL(dataUrl, (img) => {
@@ -121,16 +184,40 @@ const UploadToolPanel = () => {
       {/* Recent Uploads */}
       {recentUploads.length > 0 && (
         <div>
-          <p className="text-2xs font-semibold text-dark-500 uppercase tracking-widest mb-2.5">Your Uploads</p>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-2xs font-semibold text-dark-500 uppercase tracking-widest">Your Uploads</p>
+            <span className="text-3xs text-brand-400 font-mono">1-Click AI BG Removal</span>
+          </div>
           <div className="grid grid-cols-3 gap-2">
             {recentUploads.map((url, i) => (
-              <button
-                key={i}
-                onClick={() => addImageToCanvas(url, `Upload ${i + 1}`)}
-                className="aspect-square rounded-xl bg-dark-900/60 border border-glass-border hover:border-brand-500/40 p-2 flex items-center justify-center group overflow-hidden"
-              >
-                <img src={url} alt="Upload" className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform" />
-              </button>
+              <div key={i} className="relative group rounded-xl overflow-hidden bg-dark-900/60 border border-glass-border hover:border-brand-500/40 aspect-square p-1.5 flex items-center justify-center">
+                <button
+                  onClick={() => addImageToCanvas(url, `Upload ${i + 1}`)}
+                  className="w-full h-full flex items-center justify-center"
+                  title="Add to canvas"
+                >
+                  <img src={url} alt="Upload" className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" />
+                </button>
+
+                {/* AI BG Remover Overlay Action */}
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const toastId = toast.loading('AI isolating graphic & removing background...');
+                    try {
+                      const transparentUrl = await removeImageBackground(url);
+                      addImageToCanvas(transparentUrl, `Upload ${i + 1} (Transparent)`);
+                      toast.success('Background removed & added to canvas!', { id: toastId });
+                    } catch (err) {
+                      toast.error('Could not isolate background', { id: toastId });
+                    }
+                  }}
+                  className="absolute bottom-1 right-1 p-1 rounded-md bg-brand-500 hover:bg-brand-400 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                  title="1-Click Remove Background"
+                >
+                  <Scissors className="w-3 h-3" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
