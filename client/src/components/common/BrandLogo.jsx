@@ -2,84 +2,117 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 /**
- * CrescentEmblem — Ultra-High Contrast Crexza Crescent Icon Mark
- * High-definition architectural crescent 'C' with precision twin brand dots
- * and a glowing 4-point diamond star sparkle.
+ * TokyoMakerStamp — The Iconic Crexza Tokyo Maker Stamp
+ * Circular double-ringed terracotta medallion with smiling 'C' face
+ * and dual diamond-sparkle eyes.
  */
-export const CrescentEmblem = ({ className = 'w-full h-full', light = false }) => {
-  const moonColor = light ? '#FAF7F0' : '#FFFFFF';
-  const dotColor = light ? '#FF8C6B' : '#FFFFFF';
-  const starColor = light ? '#FF8C6B' : '#FFD9A8';
+export const TokyoMakerStamp = ({ className = 'w-9 h-9', light = false }) => {
+  const stampColor = light ? '#FAF7F0' : '#C75932';
+  const innerBg = light ? '#241C18' : '#FAF7F0';
+  const detailColor = light ? '#FAF7F0' : '#C75932';
 
   return (
     <svg
-      viewBox="0 0 44 44"
+      viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={`${className} shrink-0`}
     >
-      {/* Precision Bold Crescent Moon C */}
+      {/* Outer Solid Terracotta Stamp Medallion */}
+      <circle cx="50" cy="50" r="48" fill={stampColor} />
+
+      {/* Inner Concentric Ring Accent */}
+      <circle cx="50" cy="50" r="43" stroke={innerBg} strokeWidth="2.5" />
+
+      {/* Stylized 'C' Inner Mask */}
       <path
-        d="M 33 6.5 C 28 2.5 20.5 1.5 13.5 4.2 C 5.5 7.5 0 15.5 0 24.5 C 0 34.5 8 42.5 18 42.5 C 26.5 42.5 33 37.5 36 30 C 31 33.2 24.5 34 18.2 31.8 C 11 29.2 6.2 22.8 6.2 15.5 C 6.2 11.2 8.2 7.2 11.8 5 C 18.5 4.2 26.5 6.5 33 6.5 Z"
-        fill={moonColor}
+        d="M 50 18 C 32 18 18 32 18 50 C 18 68 32 82 50 82 C 67 82 80 69 82 53 C 74 58 64 61 54 61 C 36 61 28 48 28 39 C 28 32 34 26 43 26 C 53 26 62 31 68 38 L 76 31 C 69 23 60 18 50 18 Z"
+        fill={innerBg}
+        opacity="0.15"
       />
-      {/* Precision Twin Brand Dots */}
-      <circle cx="23.5" cy="16" r="3.4" fill={dotColor} />
-      <circle cx="23.5" cy="29" r="3.4" fill={dotColor} />
-      {/* 4-Point Sparkle Star on Top Apex */}
+
+      {/* Center Face Canvas */}
+      <circle cx="50" cy="50" r="35" fill={innerBg} />
+
+      {/* Stylized 'C' Arc Terminal at the Top Right */}
       <path
-        d="M 34.5 1 C 35.2 4.8 37.2 6.8 41 7.5 C 37.2 8.2 35.2 10.2 34.5 14 C 33.8 10.2 31.8 8.2 28 7.5 C 31.8 6.8 33.8 4.8 34.5 1 Z"
-        fill={starColor}
+        d="M 45 23 C 58 23 70 30 75 41 C 77 45 74 49 69 48 C 65 47 62 44 60 41 C 56 34 49 30 42 31 C 39 31.5 37 34 38 37 C 39 39 42 40 45 40 L 45 36"
+        stroke={detailColor}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+
+      {/* Left Diamond-Sparkle Eye */}
+      <path
+        d="M 41 33 C 41.5 38 43 40 48 40.5 C 43 41 41.5 43 41 48 C 40.5 43 39 41 34 40.5 C 39 40 40.5 38 41 33 Z"
+        fill={detailColor}
+      />
+
+      {/* Right Diamond-Sparkle Eye */}
+      <path
+        d="M 59 33 C 59.5 38 61 40 66 40.5 C 61 41 59.5 43 59 48 C 58.5 43 57 41 52 40.5 C 57 40 58.5 38 59 33 Z"
+        fill={detailColor}
+      />
+
+      {/* Warm Smile Curve with Flared Dimples */}
+      <path
+        d="M 33 50 C 33 66 67 66 67 50"
+        stroke={detailColor}
+        strokeWidth="4.5"
+        strokeLinecap="round"
+      />
+      {/* Left Dimple */}
+      <path
+        d="M 31 48 C 30.5 53 35 52 35 52"
+        stroke={detailColor}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      {/* Right Dimple */}
+      <path
+        d="M 69 48 C 69.5 53 65 52 65 52"
+        stroke={detailColor}
+        strokeWidth="3.5"
+        strokeLinecap="round"
       />
     </svg>
   );
 };
 
 /**
- * CShapeSmileIcon — Backwards compatibility wrapper
+ * CShapeSmileIcon / CrescentEmblem aliases for backwards compatibility
  */
-export const CShapeSmileIcon = ({ className = 'w-full h-full' }) => (
-  <CrescentEmblem className={className} />
-);
+export const CShapeSmileIcon = (props) => <TokyoMakerStamp {...props} />;
+export const CrescentEmblem = (props) => <TokyoMakerStamp {...props} />;
 
 /**
- * SmileyMark — Bold Luxury Terracotta Brand Emblem Badge
+ * SmileyMark — The Tokyo Maker Stamp Badge
  */
 export const SmileyMark = ({ size = 'md', variant = 'terracotta', className = '' }) => {
   const sizeMap = {
-    sm: { box: 'w-8 h-8 rounded-xl', svg: 'w-4.5 h-4.5' },
-    md: { box: 'w-10 h-10 rounded-xl', svg: 'w-6 h-6' },
-    lg: { box: 'w-11.5 h-11.5 rounded-2xl', svg: 'w-7 h-7' },
-    xl: { box: 'w-14 h-14 rounded-2xl', svg: 'w-9 h-9' },
+    sm: { box: 'w-8 h-8', svg: 'w-full h-full' },
+    md: { box: 'w-10 h-10', svg: 'w-full h-full' },
+    lg: { box: 'w-12 h-12', svg: 'w-full h-full' },
+    xl: { box: 'w-16 h-16', svg: 'w-full h-full' },
   };
 
   const current = sizeMap[size] || sizeMap.md;
 
-  const variantStyles = {
-    terracotta: 'bg-gradient-to-br from-[#E06B43] via-[#C75932] to-[#A84420] text-white shadow-lg shadow-[#C75932]/30 ring-1 ring-[#FF9E7D]/35 border border-[#B54A25]',
-    dark: 'bg-[#241C18] text-[#FAF7F0] shadow-lg shadow-black/30 border border-[#3E2E22]',
-    light: 'bg-[#FAF7F0] text-[#32251D] shadow-sm shadow-black/5 border border-stone-300',
-  };
-
-  const activeStyle = variantStyles[variant] || variantStyles.terracotta;
-
   return (
     <div className={`relative group/logo inline-flex items-center justify-center select-none ${className}`}>
       <div
-        className={`${current.box} ${activeStyle} flex items-center justify-center transition-all duration-300 group-hover/logo:scale-105 group-hover/logo:shadow-xl active:scale-95`}
-        title="Crexza"
+        className={`${current.box} flex items-center justify-center transition-all duration-300 group-hover/logo:scale-105 group-hover/logo:rotate-3 active:scale-95`}
+        title="CREXZA"
       >
-        <div className={`${current.svg} flex items-center justify-center`}>
-          <CrescentEmblem className="w-full h-full" light={variant === 'dark'} />
-        </div>
+        <TokyoMakerStamp className={current.svg} light={variant === 'dark'} />
       </div>
     </div>
   );
 };
 
 /**
- * BrandLogo — High-Impact, Crystal-Clear Crexza Brand Identity
- * Displays the bold luxury Crescent Emblem Badge paired with the full, high-contrast "Crexza" wordmark.
+ * BrandLogo — The Official Tokyo Maker Stamp & CREXZA Wordmark
+ * Displays ONLY the circular stamp emblem and the bold collegiate 'CREXZA' wordmark.
  */
 export const BrandLogo = ({
   size = 'md',
@@ -89,39 +122,30 @@ export const BrandLogo = ({
   light = false,
 }) => {
   const sizes = {
-    sm: { text: 'text-lg', star: 'w-3.5 h-3.5', gap: 'gap-2.5' },
-    md: { text: 'text-[22px] tracking-tight', star: 'w-4 h-4', gap: 'gap-3' },
-    lg: { text: 'text-[26px] tracking-tight', star: 'w-4.5 h-4.5', gap: 'gap-3.5' },
-    xl: { text: 'text-[32px] tracking-tight', star: 'w-5.5 h-5.5', gap: 'gap-4' },
+    sm: { stamp: 'w-7 h-7', text: 'text-lg', gap: 'gap-2' },
+    md: { stamp: 'w-9 h-9', text: 'text-2xl', gap: 'gap-2.5' },
+    lg: { stamp: 'w-11 h-11', text: 'text-3xl', gap: 'gap-3' },
+    xl: { stamp: 'w-14 h-14', text: 'text-4xl', gap: 'gap-3.5' },
   };
 
   const current = sizes[size] || sizes.md;
-  const textColor = light ? 'text-[#FAF7F0]' : 'text-[#1C130D]';
-  const accentColor = light ? 'text-[#FF8C6B]' : 'text-[#C75932]';
+  const textColor = light ? 'text-[#FAF7F0]' : 'text-[#1F1510]';
 
   const content = (
     <div className={`inline-flex items-center ${current.gap} group/brand select-none cursor-pointer ${className}`}>
-      {/* 1. Bold Luxury Crescent Emblem Badge */}
-      <SmileyMark size={size} variant={light ? 'dark' : 'terracotta'} />
+      {/* 1. Tokyo Maker Stamp Emblem */}
+      <div className="transition-transform duration-300 ease-out group-hover/brand:scale-105 group-hover/brand:rotate-3">
+        <TokyoMakerStamp className={current.stamp} light={light} />
+      </div>
 
-      {/* 2. Full High-Contrast Wordmark "Crexza" */}
+      {/* 2. ONLY the bold 'CREXZA' Wordmark */}
       {showText && (
-        <div className="flex items-center font-black leading-none select-none">
-          <span className={`${current.text} ${textColor} font-black transition-colors duration-200 group-hover/brand:text-black`}>
-            Crex
-          </span>
-          <span className={`${current.text} ${accentColor} font-black ml-0.5 relative inline-flex items-center transition-colors duration-200`}>
-            za
-            {/* Signature 4-Point Star Sparkle on the 'a' */}
-            <svg
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className={`${current.star} ml-0.5 -mt-3 opacity-95 transition-transform duration-300 group-hover/brand:rotate-45 group-hover/brand:scale-125`}
-            >
-              <path d="M12 0 C12.5 6 14 7.5 20 8 C14 8.5 12.5 10 12 16 C11.5 10 10 8.5 4 8 C10 7.5 11.5 6 12 0 Z" />
-            </svg>
-          </span>
-        </div>
+        <span
+          className={`${current.text} ${textColor} font-black tracking-[-0.02em] uppercase leading-none transition-colors duration-200 group-hover/brand:text-[#C75932]`}
+          style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900 }}
+        >
+          CREXZA
+        </span>
       )}
     </div>
   );

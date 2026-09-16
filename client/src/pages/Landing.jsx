@@ -426,10 +426,9 @@ const Landing = () => {
             className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/70 dark:bg-[#241C18]/80 border border-[#C76D4A]/30 backdrop-blur-md shadow-sm mb-6 group cursor-default hover:border-[#C76D4A]/60 transition-colors"
           >
             <SmileyMark size="sm" variant="terracotta" />
-            <span className="text-xs font-bold tracking-wider uppercase text-[#32251D] dark:text-[#FAF7F0]">
-              Crexza <span className="text-[#C76D4A]">Studio</span> &bull; Custom Print &amp; Design
+            <span className="text-xs font-extrabold tracking-widest uppercase text-[#1F1510] dark:text-[#FAF7F0]">
+              CREXZA
             </span>
-            <Sparkles className="w-3.5 h-3.5 text-[#C76D4A] animate-pulse" />
           </motion.div>
 
           {/* Headline */}
