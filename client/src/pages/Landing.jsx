@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { CrescentEmblem } from '@/components/common/BrandLogo';
+import { CrescentEmblem, SmileyMark } from '@/components/common/BrandLogo';
 import api from '@/lib/axios';
 import { formatPrice } from '@/lib/utils';
 
@@ -423,9 +423,9 @@ const Landing = () => {
             initial={{ opacity: 0, scale: 0.85, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#32251D]/10 dark:bg-[#FAF7F0]/10 border border-[#C76D4A]/30 backdrop-blur-md shadow-sm mb-6 group cursor-default hover:border-[#C76D4A]/60 transition-colors"
+            className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/70 dark:bg-[#241C18]/80 border border-[#C76D4A]/30 backdrop-blur-md shadow-sm mb-6 group cursor-default hover:border-[#C76D4A]/60 transition-colors"
           >
-            <CrescentEmblem className="w-5 h-5" />
+            <SmileyMark size="sm" variant="terracotta" />
             <span className="text-xs font-bold tracking-wider uppercase text-[#32251D] dark:text-[#FAF7F0]">
               Crexza <span className="text-[#C76D4A]">Studio</span> &bull; Custom Print &amp; Design
             </span>
