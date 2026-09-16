@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { CrescentEmblem } from '@/components/common/BrandLogo';
 import api from '@/lib/axios';
 import { formatPrice } from '@/lib/utils';
 
@@ -416,7 +417,21 @@ const Landing = () => {
         </motion.div>
 
         {/* ── Central content ── */}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-20">
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-16">
+          {/* Brand Monogram Hero Pill */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#32251D]/10 dark:bg-[#FAF7F0]/10 border border-[#C76D4A]/30 backdrop-blur-md shadow-sm mb-6 group cursor-default hover:border-[#C76D4A]/60 transition-colors"
+          >
+            <CrescentEmblem className="w-5 h-5" />
+            <span className="text-xs font-bold tracking-wider uppercase text-[#32251D] dark:text-[#FAF7F0]">
+              Crexza <span className="text-[#C76D4A]">Studio</span> &bull; Custom Print &amp; Design
+            </span>
+            <Sparkles className="w-3.5 h-3.5 text-[#C76D4A] animate-pulse" />
+          </motion.div>
+
           {/* Headline */}
           <motion.h1
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight mb-4"
@@ -801,11 +816,13 @@ const Landing = () => {
         >
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(199,109,74,0.15) 0%, transparent 60%)' }} />
           <motion.div
-            className="relative"
+            className="relative flex justify-center mb-6"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Sparkles className="w-16 h-16 mx-auto mb-6 text-brand-400" />
+            <div className="w-20 h-20 rounded-3xl bg-[#FAF7F0] shadow-2xl shadow-[#C76D4A]/25 border border-[#C76D4A]/30 flex items-center justify-center p-3.5 group hover:scale-110 transition-transform">
+              <CrescentEmblem className="w-full h-full" />
+            </div>
           </motion.div>
           <h2 className="relative text-4xl md:text-6xl font-black text-white mb-4">
             Ready to create something <span className="gradient-text">extraordinary?</span>
