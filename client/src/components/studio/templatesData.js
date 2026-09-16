@@ -348,6 +348,166 @@ export const STARTER_TEMPLATES = [
       garmentColor: colors.garment || '#FFFFFF',
     }),
   },
+  {
+    id: 'archive-longsleeve',
+    name: 'Archive Member Long Sleeve',
+    tagline: 'Drop shoulder sleeve print with archive stamp & serial code',
+    category: 'clothing',
+    style: 'streetwear',
+    badge: 'Archive Drop',
+    hasPhoto: false,
+    defaultColors: {
+      text: '#1C1917',
+      accent: '#C76D4A',
+      garment: '#F7F3EB',
+    },
+    defaultTexts: {
+      headline: 'ARCHIVE MEMBER',
+      subline: 'CREXZA EXTENDED EDITION NO. 03',
+      tag: 'LIMITED — 250 PCS — HAND NUMBERED',
+    },
+    textFields: [
+      { key: 'headline', label: 'Main Title', placeholder: 'e.g. ARCHIVE MEMBER', maxLength: 20 },
+      { key: 'subline', label: 'Edition / Drop Name', placeholder: 'e.g. CREXZA EXTENDED EDITION NO. 03', maxLength: 36 },
+      { key: 'tag', label: 'Print Run / Serial Detail', placeholder: 'e.g. LIMITED — 250 PCS — HAND NUMBERED', maxLength: 40 },
+    ],
+    renderPreview: (values, colors) => ({
+      headline: values.headline || 'ARCHIVE MEMBER',
+      subline: values.subline || 'CREXZA EXTENDED EDITION NO. 03',
+      tag: values.tag || 'LIMITED — 250 PCS — HAND NUMBERED',
+      accentColor: colors.accent || '#C76D4A',
+      textColor: colors.text || '#1C1917',
+      garmentColor: colors.garment || '#F7F3EB',
+    }),
+  },
+  {
+    id: 'sundowner-tanktop',
+    name: 'Sundowner Athletics',
+    tagline: 'Bold athletic tank with brushstroke sun & palm graphic',
+    category: 'clothing',
+    style: 'collegiate',
+    badge: 'Summer Club',
+    hasPhoto: false,
+    defaultColors: {
+      text: '#7C2D12',
+      accent: '#F97316',
+      garment: '#FFFFFF',
+    },
+    defaultTexts: {
+      headline: 'SUNDOWNER',
+      subline: 'BEACH ATHLETICS CLUB',
+      tag: 'EST. 1986 • MALIBU',
+    },
+    textFields: [
+      { key: 'headline', label: 'Club Name', placeholder: 'e.g. SUNDOWNER', maxLength: 16 },
+      { key: 'subline', label: 'Sport / Division', placeholder: 'e.g. BEACH ATHLETICS CLUB', maxLength: 28 },
+      { key: 'tag', label: 'Founded / Location', placeholder: 'e.g. EST. 1986 • MALIBU', maxLength: 24 },
+    ],
+    renderPreview: (values, colors) => ({
+      headline: values.headline || 'SUNDOWNER',
+      subline: values.subline || 'BEACH ATHLETICS CLUB',
+      tag: values.tag || 'EST. 1986 • MALIBU',
+      accentColor: colors.accent || '#F97316',
+      textColor: colors.text || '#7C2D12',
+      garmentColor: colors.garment || '#FFFFFF',
+    }),
+  },
+  {
+    id: 'prep-polo-crest',
+    name: 'Heritage Prep Crest',
+    tagline: 'Classic left-chest monogram crest for polo & formal wear',
+    category: 'clothing',
+    style: 'monogram',
+    badge: 'Preppy',
+    hasPhoto: false,
+    defaultColors: {
+      text: '#1E3A5F',
+      accent: '#C76D4A',
+      garment: '#FFFFFF',
+    },
+    defaultTexts: {
+      initial: 'CF',
+      headline: 'CREXZA FIELDS',
+      subline: 'POLO CLUB MMXXV',
+    },
+    textFields: [
+      { key: 'initial', label: 'Monogram (1-3 Letters)', placeholder: 'e.g. CF', maxLength: 3 },
+      { key: 'headline', label: 'Club / House Name', placeholder: 'e.g. CREXZA FIELDS', maxLength: 20 },
+      { key: 'subline', label: 'Division / Year', placeholder: 'e.g. POLO CLUB MMXXV', maxLength: 22 },
+    ],
+    renderPreview: (values, colors) => ({
+      initial: values.initial || 'CF',
+      headline: values.headline || 'CREXZA FIELDS',
+      subline: values.subline || 'POLO CLUB MMXXV',
+      accentColor: colors.accent || '#C76D4A',
+      textColor: colors.text || '#1E3A5F',
+      garmentColor: colors.garment || '#FFFFFF',
+    }),
+  },
+  {
+    id: 'neon-cityscape',
+    name: 'Neon Cityscape Grid',
+    tagline: 'Retrofuturist grid city skyline for acrylic & premium prints',
+    category: 'artwork',
+    style: 'cyber',
+    badge: 'Premium Print',
+    hasPhoto: false,
+    defaultColors: {
+      text: '#E0E7FF',
+      accent: '#818CF8',
+      garment: '#0F172A',
+    },
+    defaultTexts: {
+      headline: 'NEON DISTRICT',
+      subline: 'METROPOLITAN SKYLINE SERIES',
+      tag: 'VOL. III — INDIGO CITY',
+    },
+    textFields: [
+      { key: 'headline', label: 'City / District Name', placeholder: 'e.g. NEON DISTRICT', maxLength: 20 },
+      { key: 'subline', label: 'Series / Collection', placeholder: 'e.g. METROPOLITAN SKYLINE SERIES', maxLength: 34 },
+      { key: 'tag', label: 'Volume / Edition', placeholder: 'e.g. VOL. III — INDIGO CITY', maxLength: 28 },
+    ],
+    renderPreview: (values, colors) => ({
+      headline: values.headline || 'NEON DISTRICT',
+      subline: values.subline || 'METROPOLITAN SKYLINE SERIES',
+      tag: values.tag || 'VOL. III — INDIGO CITY',
+      accentColor: colors.accent || '#818CF8',
+      textColor: colors.text || '#E0E7FF',
+      garmentColor: colors.garment || '#0F172A',
+    }),
+  },
+  {
+    id: 'block-logo-cap',
+    name: 'Block Logo Snapback',
+    tagline: 'Front panel block wordmark with tonal woven patch detail',
+    category: 'accessories',
+    style: 'streetwear',
+    badge: 'Headwear',
+    hasPhoto: false,
+    defaultColors: {
+      text: '#FFFFFF',
+      accent: '#C76D4A',
+      garment: '#1C1917',
+    },
+    defaultTexts: {
+      headline: 'CREXZA',
+      subline: 'ARCH DIVISION',
+      tag: 'SNAPBACK • ONE SIZE',
+    },
+    textFields: [
+      { key: 'headline', label: 'Main Wordmark', placeholder: 'e.g. CREXZA', maxLength: 12 },
+      { key: 'subline', label: 'Sub Brand / Division', placeholder: 'e.g. ARCH DIVISION', maxLength: 18 },
+      { key: 'tag', label: 'Cap Detail / Size Tag', placeholder: 'e.g. SNAPBACK • ONE SIZE', maxLength: 22 },
+    ],
+    renderPreview: (values, colors) => ({
+      headline: values.headline || 'CREXZA',
+      subline: values.subline || 'ARCH DIVISION',
+      tag: values.tag || 'SNAPBACK • ONE SIZE',
+      accentColor: colors.accent || '#C76D4A',
+      textColor: colors.text || '#FFFFFF',
+      garmentColor: colors.garment || '#1C1917',
+    }),
+  },
 ];
 
 import { getDesignZone } from './ProductTemplate';
@@ -376,6 +536,11 @@ export function applyTemplateToFabricCanvas(canvas, template, values, colors, ph
     'botanical-art':       'canvas',
     'cyber-matrix':        'phonecase',
     'vintage-crest-patch': 'totebag',
+    'archive-longsleeve':  'longsleeve',
+    'sundowner-tanktop':   'tanktop',
+    'prep-polo-crest':     'polo',
+    'neon-cityscape':      'acrylic',
+    'block-logo-cap':      'cap',
   };
   const targetProduct = TEMPLATE_PRODUCT_MAP[template.id] || (template.category === 'artwork' ? 'canvas' : template.category === 'accessories' ? 'phonecase' : 'tshirt');
   const zone = getDesignZone(targetProduct, 'front', canvas.width, canvas.height);
@@ -1154,6 +1319,496 @@ export function applyTemplateToFabricCanvas(canvas, template, values, colors, ph
     });
 
     canvas.add(shield, star, headline, subline, tag);
+  }
+
+  // 11. Archive Member Long Sleeve
+  else if (template.id === 'archive-longsleeve') {
+    // Wide horizontal archive stamp border
+    const stampBorder = new fabric.Rect({
+      left: centerX,
+      top: centerY - 30,
+      width: 240,
+      height: 160,
+      originX: 'center',
+      originY: 'center',
+      fill: 'transparent',
+      stroke: accentColor,
+      strokeWidth: 1.2,
+      strokeDashArray: [8, 5],
+      id: 'template_stamp_border',
+    });
+
+    // Top thin rule
+    const topRule = new fabric.Rect({
+      left: centerX,
+      top: centerY - 107,
+      width: 200,
+      height: 2,
+      originX: 'center',
+      originY: 'center',
+      fill: textColor,
+      id: 'template_top_rule',
+    });
+
+    // ARCHIVE MEMBER headline
+    const headline = new fabric.IText(values.headline || 'ARCHIVE MEMBER', {
+      left: centerX,
+      top: centerY - 85,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 22,
+      fontFamily: 'Space Grotesk, sans-serif',
+      fontWeight: '900',
+      fill: textColor,
+      charSpacing: 220,
+      id: 'template_headline',
+      customName: 'Main Title',
+    });
+
+    // Accent divider stripe
+    const stripe = new fabric.Rect({
+      left: centerX,
+      top: centerY - 60,
+      width: 200,
+      height: 4,
+      originX: 'center',
+      originY: 'center',
+      fill: accentColor,
+      id: 'template_stripe',
+    });
+
+    // Edition subline
+    const subline = new fabric.IText(values.subline || 'CREXZA EXTENDED EDITION NO. 03', {
+      left: centerX,
+      top: centerY - 38,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 9,
+      fontFamily: 'Inter',
+      fontWeight: '700',
+      fill: textColor,
+      charSpacing: 160,
+      id: 'template_subline',
+      customName: 'Edition Name',
+    });
+
+    // Serial / print-run barcode bars
+    const barWidths = [3, 1, 4, 2, 1, 5, 2, 3, 1, 4, 2, 1, 3, 1];
+    let bx = centerX - 65;
+    const barObjs = barWidths.map((w, i) => {
+      const b = new fabric.Rect({
+        left: bx,
+        top: centerY - 5,
+        width: w * 1.4,
+        height: 20,
+        fill: textColor,
+        opacity: 0.75,
+        id: `template_bar_${i}`,
+      });
+      bx += w * 1.4 + 5;
+      return b;
+    });
+
+    // Print run tag
+    const tag = new fabric.IText(values.tag || 'LIMITED — 250 PCS — HAND NUMBERED', {
+      left: centerX,
+      top: centerY + 30,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 7,
+      fontFamily: 'Space Grotesk, monospace',
+      fontWeight: '600',
+      fill: accentColor,
+      charSpacing: 100,
+      id: 'template_tag',
+      customName: 'Serial Tag',
+    });
+
+    // Bottom thin rule
+    const bottomRule = new fabric.Rect({
+      left: centerX,
+      top: centerY + 50,
+      width: 200,
+      height: 2,
+      originX: 'center',
+      originY: 'center',
+      fill: textColor,
+      id: 'template_bottom_rule',
+    });
+
+    canvas.add(stampBorder, topRule, headline, stripe, subline, ...barObjs, tag, bottomRule);
+  }
+
+  // 12. Sundowner Athletics Tank Top
+  else if (template.id === 'sundowner-tanktop') {
+    // Large sun rays (starburst)
+    const rayCount = 12;
+    const sunRays = Array.from({ length: rayCount }, (_, i) => {
+      const angle = (i * 360) / rayCount;
+      const rad = (angle * Math.PI) / 180;
+      const x1 = centerX + Math.cos(rad) * 38;
+      const y1 = centerY - 30 + Math.sin(rad) * 38;
+      const x2 = centerX + Math.cos(rad) * 62;
+      const y2 = centerY - 30 + Math.sin(rad) * 62;
+      return new fabric.Line([x1, y1, x2, y2], {
+        stroke: accentColor,
+        strokeWidth: 1.8,
+        opacity: 0.7,
+        id: `template_ray_${i}`,
+      });
+    });
+
+    // Sun circle
+    const sun = new fabric.Circle({
+      left: centerX,
+      top: centerY - 30,
+      radius: 34,
+      originX: 'center',
+      originY: 'center',
+      fill: accentColor,
+      opacity: 0.9,
+      id: 'template_sun',
+    });
+
+    // Bold club headline
+    const headline = new fabric.IText(values.headline || 'SUNDOWNER', {
+      left: centerX,
+      top: centerY + 28,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 30,
+      fontFamily: 'Impact, Inter, sans-serif',
+      fontWeight: '900',
+      fill: textColor,
+      charSpacing: 200,
+      id: 'template_headline',
+      customName: 'Club Name',
+    });
+
+    // Horizontal rule pair
+    const rule1 = new fabric.Rect({ left: centerX - 45, top: centerY + 50, width: 35, height: 2, fill: textColor, originX: 'center' });
+    const rule2 = new fabric.Rect({ left: centerX + 45, top: centerY + 50, width: 35, height: 2, fill: textColor, originX: 'center' });
+
+    // Subline
+    const subline = new fabric.IText(values.subline || 'BEACH ATHLETICS CLUB', {
+      left: centerX,
+      top: centerY + 65,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 9,
+      fontFamily: 'Inter',
+      fontWeight: '800',
+      fill: textColor,
+      charSpacing: 160,
+      id: 'template_subline',
+      customName: 'Division',
+    });
+
+    // Founded tag
+    const tag = new fabric.IText(values.tag || 'EST. 1986 • MALIBU', {
+      left: centerX,
+      top: centerY + 85,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 8,
+      fontFamily: 'Space Grotesk, monospace',
+      fontWeight: '600',
+      fill: accentColor,
+      charSpacing: 120,
+      id: 'template_tag',
+      customName: 'Location Tag',
+    });
+
+    canvas.add(...sunRays, sun, headline, rule1, rule2, subline, tag);
+  }
+
+  // 13. Heritage Prep Polo Crest
+  else if (template.id === 'prep-polo-crest') {
+    // Oval emblem background
+    const oval = new fabric.Ellipse({
+      left: centerX,
+      top: centerY - 20,
+      rx: 72,
+      ry: 88,
+      originX: 'center',
+      originY: 'center',
+      fill: 'transparent',
+      stroke: accentColor,
+      strokeWidth: 2,
+      id: 'template_oval_out',
+    });
+
+    const ovalInner = new fabric.Ellipse({
+      left: centerX,
+      top: centerY - 20,
+      rx: 64,
+      ry: 80,
+      originX: 'center',
+      originY: 'center',
+      fill: 'transparent',
+      stroke: textColor,
+      strokeWidth: 0.8,
+      strokeDashArray: [3, 3],
+      id: 'template_oval_in',
+    });
+
+    // Horizontal dividers inside oval
+    const topDivider = new fabric.Rect({ left: centerX, top: centerY - 82, width: 100, height: 1.5, fill: accentColor, originX: 'center' });
+    const botDivider = new fabric.Rect({ left: centerX, top: centerY + 42, width: 100, height: 1.5, fill: accentColor, originX: 'center' });
+
+    // Large monogram initial
+    const initial = new fabric.IText(values.initial || 'CF', {
+      left: centerX,
+      top: centerY - 22,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 48,
+      fontFamily: 'Georgia, serif',
+      fontWeight: 'bold',
+      fill: textColor,
+      id: 'template_initial',
+      customName: 'Monogram Initial',
+    });
+
+    // Club name
+    const headline = new fabric.IText(values.headline || 'CREXZA FIELDS', {
+      left: centerX,
+      top: centerY - 70,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 10,
+      fontFamily: 'Georgia, serif',
+      fontWeight: 'bold',
+      fill: textColor,
+      charSpacing: 180,
+      id: 'template_headline',
+      customName: 'Club Name',
+    });
+
+    // Subline (year / division)
+    const subline = new fabric.IText(values.subline || 'POLO CLUB MMXXV', {
+      left: centerX,
+      top: centerY + 54,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 9,
+      fontFamily: 'Georgia, serif',
+      fontStyle: 'italic',
+      fill: accentColor,
+      charSpacing: 140,
+      id: 'template_subline',
+      customName: 'Division / Year',
+    });
+
+    canvas.add(oval, ovalInner, topDivider, botDivider, initial, headline, subline);
+  }
+
+  // 14. Neon Cityscape Grid (Acrylic Print)
+  else if (template.id === 'neon-cityscape') {
+    // Dark background rectangle (simulates acrylic base)
+    const bg = new fabric.Rect({
+      left: centerX,
+      top: centerY,
+      width: 240,
+      height: 260,
+      originX: 'center',
+      originY: 'center',
+      fill: textColor.startsWith('#0') ? textColor : '#0F172A',
+      id: 'template_bg',
+    });
+
+    // Perspective grid lines — horizontal
+    const gridLines = [];
+    for (let i = 0; i < 5; i++) {
+      const y = centerY + 10 + i * 20;
+      gridLines.push(new fabric.Line([centerX - 110, y, centerX + 110, y], {
+        stroke: accentColor,
+        strokeWidth: 0.6,
+        opacity: 0.35 + i * 0.06,
+        id: `template_h_grid_${i}`,
+      }));
+    }
+
+    // Perspective grid lines — vertical (converging)
+    for (let i = -4; i <= 4; i++) {
+      gridLines.push(new fabric.Line([centerX + i * 30, centerY - 80, centerX + i * 14, centerY + 110], {
+        stroke: accentColor,
+        strokeWidth: 0.6,
+        opacity: 0.30,
+        id: `template_v_grid_${i + 5}`,
+      }));
+    }
+
+    // City silhouette buildings (simplified rectangular towers)
+    const buildingData = [
+      { x: centerX - 90, h: 55, w: 18 },
+      { x: centerX - 68, h: 40, w: 14 },
+      { x: centerX - 50, h: 72, w: 22 },
+      { x: centerX - 24, h: 48, w: 16 },
+      { x: centerX - 4, h: 80, w: 20 },
+      { x: centerX + 18, h: 52, w: 16 },
+      { x: centerX + 38, h: 64, w: 22 },
+      { x: centerX + 64, h: 36, w: 14 },
+      { x: centerX + 82, h: 50, w: 18 },
+    ];
+    const buildings = buildingData.map((b, i) =>
+      new fabric.Rect({
+        left: b.x,
+        top: centerY + 10 - b.h,
+        width: b.w,
+        height: b.h,
+        fill: accentColor,
+        opacity: 0.15 + (i % 3) * 0.06,
+        stroke: accentColor,
+        strokeWidth: 0.8,
+        id: `template_building_${i}`,
+      })
+    );
+
+    // Glow horizon line
+    const horizon = new fabric.Rect({
+      left: centerX,
+      top: centerY + 10,
+      width: 240,
+      height: 2,
+      originX: 'center',
+      fill: accentColor,
+      opacity: 0.8,
+      id: 'template_horizon',
+    });
+
+    // Headline text
+    const headline = new fabric.IText(values.headline || 'NEON DISTRICT', {
+      left: centerX,
+      top: centerY - 100,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 20,
+      fontFamily: 'Space Grotesk, sans-serif',
+      fontWeight: '900',
+      fill: accentColor,
+      charSpacing: 220,
+      id: 'template_headline',
+      customName: 'City Name',
+    });
+
+    const subline = new fabric.IText(values.subline || 'METROPOLITAN SKYLINE SERIES', {
+      left: centerX,
+      top: centerY + 70,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 8,
+      fontFamily: 'Inter',
+      fontWeight: '700',
+      fill: '#FFFFFF',
+      charSpacing: 160,
+      opacity: 0.8,
+      id: 'template_subline',
+      customName: 'Series Name',
+    });
+
+    const tag = new fabric.IText(values.tag || 'VOL. III — INDIGO CITY', {
+      left: centerX,
+      top: centerY + 90,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 7,
+      fontFamily: 'Space Grotesk, monospace',
+      fontWeight: '600',
+      fill: accentColor,
+      charSpacing: 120,
+      id: 'template_tag',
+      customName: 'Volume Tag',
+    });
+
+    canvas.add(bg, ...gridLines, ...buildings, horizon, headline, subline, tag);
+  }
+
+  // 15. Block Logo Snapback Cap
+  else if (template.id === 'block-logo-cap') {
+    // Cap panel shape (simplified trapezoid using path)
+    const panel = new fabric.Path('M 10 70 L 0 30 Q 50 0 100 30 L 90 70 Z', {
+      left: centerX,
+      top: centerY - 30,
+      originX: 'center',
+      originY: 'center',
+      scaleX: 2.4,
+      scaleY: 1.8,
+      fill: 'transparent',
+      stroke: textColor,
+      strokeWidth: 1.5,
+      id: 'template_cap_panel',
+    });
+
+    // Top arc rule
+    const topArc = new fabric.Path('M -100 -28 Q 0 -60 100 -28', {
+      left: centerX,
+      top: centerY - 15,
+      originX: 'center',
+      originY: 'center',
+      fill: 'transparent',
+      stroke: accentColor,
+      strokeWidth: 2,
+      id: 'template_arc',
+    });
+
+    // Bold block wordmark
+    const headline = new fabric.IText(values.headline || 'CREXZA', {
+      left: centerX,
+      top: centerY - 15,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 38,
+      fontFamily: 'Impact, Inter, sans-serif',
+      fontWeight: '900',
+      fill: textColor,
+      charSpacing: 160,
+      id: 'template_headline',
+      customName: 'Wordmark',
+    });
+
+    // Underline bar
+    const bar = new fabric.Rect({
+      left: centerX,
+      top: centerY + 18,
+      width: 160,
+      height: 3,
+      originX: 'center',
+      fill: accentColor,
+      id: 'template_bar',
+    });
+
+    // Sub brand
+    const subline = new fabric.IText(values.subline || 'ARCH DIVISION', {
+      left: centerX,
+      top: centerY + 34,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 9,
+      fontFamily: 'Space Grotesk, sans-serif',
+      fontWeight: '700',
+      fill: textColor,
+      charSpacing: 200,
+      id: 'template_subline',
+      customName: 'Division',
+    });
+
+    // Size tag
+    const tag = new fabric.IText(values.tag || 'SNAPBACK • ONE SIZE', {
+      left: centerX,
+      top: centerY + 58,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 7.5,
+      fontFamily: 'Space Grotesk, monospace',
+      fontWeight: '600',
+      fill: accentColor,
+      charSpacing: 100,
+      id: 'template_tag',
+      customName: 'Size Tag',
+    });
+
+    canvas.add(panel, topArc, headline, bar, subline, tag);
   }
 
   canvas.renderAll();

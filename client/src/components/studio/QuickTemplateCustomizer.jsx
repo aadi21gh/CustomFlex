@@ -680,6 +680,11 @@ const QuickTemplateCustomizer = ({
     'botanical-art':       'canvas',
     'cyber-matrix':        'phonecase',
     'vintage-crest-patch': 'totebag',
+    'archive-longsleeve':  'longsleeve',
+    'sundowner-tanktop':   'tanktop',
+    'prep-polo-crest':     'polo',
+    'neon-cityscape':      'acrylic',
+    'block-logo-cap':      'cap',
   };
 
   // Category badge meta for template cards

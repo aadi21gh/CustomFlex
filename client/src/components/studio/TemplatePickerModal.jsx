@@ -173,8 +173,96 @@ const TemplateArtworkOverlay = ({ template, textColor, accentColor }) => {
         </g>
       )}
 
+      {template.id === 'archive-longsleeve' && (
+        <g>
+          <rect x="8" y="12" width="84" height="84" fill="none" stroke={accentColor} strokeWidth="0.8" strokeDasharray="5 3" />
+          <line x1="12" y1="22" x2="88" y2="22" stroke={textColor} strokeWidth="1" />
+          <text x="50" y="36" textAnchor="middle" fontSize="8" fontWeight="900" fontFamily="sans-serif" fill={textColor} letterSpacing="0.6">ARCHIVE</text>
+          <text x="50" y="48" textAnchor="middle" fontSize="8" fontWeight="900" fontFamily="sans-serif" fill={textColor} letterSpacing="0.6">MEMBER</text>
+          <rect x="12" y="54" width="76" height="3" fill={accentColor} />
+          <text x="50" y="66" textAnchor="middle" fontSize="4" fontWeight="bold" fontFamily="sans-serif" fill={textColor} opacity="0.75">EXTENDED EDITION NO. 03</text>
+          {[1, 0.5, 1.5, 0.8, 1.2, 2, 0.6, 1.4, 1, 0.7, 1.6, 0.5, 1.1, 0.9].map((w, i) => (
+            <rect key={i} x={18 + i * 4.4} y="74" width={w * 2} height="10" fill={textColor} opacity="0.65" />
+          ))}
+          <line x1="12" y1="90" x2="88" y2="90" stroke={textColor} strokeWidth="1" />
+        </g>
+      )}
+
+      {template.id === 'sundowner-tanktop' && (
+        <g>
+          {Array.from({ length: 12 }, (_, i) => {
+            const angle = (i * 360) / 12;
+            const rad = (angle * Math.PI) / 180;
+            return (
+              <line
+                key={i}
+                x1={50 + Math.cos(rad) * 20}
+                y1={42 + Math.sin(rad) * 20}
+                x2={50 + Math.cos(rad) * 30}
+                y2={42 + Math.sin(rad) * 30}
+                stroke={accentColor}
+                strokeWidth="1.2"
+                opacity="0.7"
+              />
+            );
+          })}
+          <circle cx="50" cy="42" r="17" fill={accentColor} opacity="0.88" />
+          <text x="50" y="74" textAnchor="middle" fontSize="11" fontWeight="900" fontFamily="Impact, sans-serif" fill={textColor} letterSpacing="0.3">SUNDOWNER</text>
+          <line x1="12" y1="80" x2="33" y2="80" stroke={textColor} strokeWidth="0.8" />
+          <line x1="67" y1="80" x2="88" y2="80" stroke={textColor} strokeWidth="0.8" />
+          <text x="50" y="88" textAnchor="middle" fontSize="4" fontWeight="bold" fontFamily="sans-serif" fill={textColor}>BEACH ATHLETICS CLUB</text>
+          <text x="50" y="100" textAnchor="middle" fontSize="3.5" fontFamily="monospace" fill={accentColor}>EST. 1986 • MALIBU</text>
+        </g>
+      )}
+
+      {template.id === 'prep-polo-crest' && (
+        <g>
+          <ellipse cx="50" cy="50" rx="38" ry="46" fill="none" stroke={accentColor} strokeWidth="1.4" />
+          <ellipse cx="50" cy="50" rx="33" ry="41" fill="none" stroke={textColor} strokeWidth="0.6" strokeDasharray="2 1.5" />
+          <line x1="17" y1="20" x2="83" y2="20" stroke={accentColor} strokeWidth="1" />
+          <line x1="17" y1="80" x2="83" y2="80" stroke={accentColor} strokeWidth="1" />
+          <text x="50" y="16" textAnchor="middle" fontSize="5" fontWeight="bold" fontFamily="Georgia, serif" fill={textColor} letterSpacing="0.4">CREXZA FIELDS</text>
+          <text x="50" y="58" textAnchor="middle" fontSize="22" fontWeight="bold" fontFamily="Georgia, serif" fill={textColor}>CF</text>
+          <text x="50" y="92" textAnchor="middle" fontSize="4" fontStyle="italic" fontFamily="Georgia, serif" fill={accentColor}>Polo Club MMXXV</text>
+        </g>
+      )}
+
+      {template.id === 'neon-cityscape' && (
+        <g>
+          <rect x="5" y="5" width="90" height="100" fill="#0F172A" opacity="0.9" />
+          {[0, 1, 2, 3, 4].map(i => (
+            <line key={`h${i}`} x1="8" y1={60 + i * 10} x2="92" y2={60 + i * 10} stroke={accentColor} strokeWidth="0.5" opacity={0.25 + i * 0.05} />
+          ))}
+          {[-3, -2, -1, 0, 1, 2, 3].map(i => (
+            <line key={`v${i}`} x1={50 + i * 14} y1="20" x2={50 + i * 8} y2="105" stroke={accentColor} strokeWidth="0.5" opacity="0.25" />
+          ))}
+          {[
+            { x: 10, h: 28, w: 8 }, { x: 20, h: 20, w: 6 }, { x: 28, h: 36, w: 10 },
+            { x: 40, h: 22, w: 7 }, { x: 49, h: 40, w: 9 }, { x: 60, h: 25, w: 8 },
+            { x: 70, h: 32, w: 10 }, { x: 82, h: 18, w: 6 },
+          ].map((b, i) => (
+            <rect key={`b${i}`} x={b.x} y={60 - b.h} width={b.w} height={b.h} fill={accentColor} opacity={0.12 + (i % 3) * 0.06} stroke={accentColor} strokeWidth="0.5" />
+          ))}
+          <line x1="8" y1="60" x2="92" y2="60" stroke={accentColor} strokeWidth="1.2" opacity="0.8" />
+          <text x="50" y="22" textAnchor="middle" fontSize="8" fontWeight="900" fontFamily="sans-serif" fill={accentColor} letterSpacing="0.5">NEON DISTRICT</text>
+          <text x="50" y="80" textAnchor="middle" fontSize="3.5" fontWeight="bold" fontFamily="sans-serif" fill="#FFFFFF" opacity="0.75">METROPOLITAN SKYLINE</text>
+          <text x="50" y="96" textAnchor="middle" fontSize="3" fontFamily="monospace" fill={accentColor} opacity="0.7">VOL. III — INDIGO CITY</text>
+        </g>
+      )}
+
+      {template.id === 'block-logo-cap' && (
+        <g>
+          <path d="M 8 70 L 2 38 Q 50 8 98 38 L 92 70 Z" fill="none" stroke={textColor} strokeWidth="1.2" />
+          <path d="M 12 38 Q 50 14 88 38" fill="none" stroke={accentColor} strokeWidth="1.2" />
+          <text x="50" y="52" textAnchor="middle" fontSize="18" fontWeight="900" fontFamily="Impact, sans-serif" fill={textColor} letterSpacing="0.4">CREXZA</text>
+          <rect x="16" y="58" width="68" height="2" fill={accentColor} />
+          <text x="50" y="68" textAnchor="middle" fontSize="5" fontWeight="700" fontFamily="sans-serif" fill={textColor} letterSpacing="0.5">ARCH DIVISION</text>
+          <text x="50" y="80" textAnchor="middle" fontSize="3.5" fontFamily="monospace" fill={accentColor}>SNAPBACK • ONE SIZE</text>
+        </g>
+      )}
+
       {/* Fallback for templates without specific artwork */}
-      {!['signature-smiley', 'tokyo-streetwear', 'varsity-athletic', 'luxury-monogram', 'polaroid-frame', 'retro-mountain', 'bauhaus-poster', 'botanical-art', 'cyber-matrix', 'vintage-crest-patch'].includes(template.id) && (
+      {!['signature-smiley', 'tokyo-streetwear', 'varsity-athletic', 'luxury-monogram', 'polaroid-frame', 'retro-mountain', 'bauhaus-poster', 'botanical-art', 'cyber-matrix', 'vintage-crest-patch', 'archive-longsleeve', 'sundowner-tanktop', 'prep-polo-crest', 'neon-cityscape', 'block-logo-cap'].includes(template.id) && (
         <g>
           <text x="50" y="50" textAnchor="middle" fontSize="8" fontWeight="900" fontFamily="monospace" fill={accentColor}>(:</text>
           <text x="50" y="70" textAnchor="middle" fontSize="5" fontWeight="bold" fontFamily="sans-serif" fill={textColor}>CREXZA</text>
